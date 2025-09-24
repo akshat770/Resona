@@ -1,6 +1,6 @@
 const router = require('express').Router();
-const auth = require('../middleware/auth');
-const User = require('../models/User');
+const auth = require('../middleware/auth.js');
+const User = require('../models/User.js');
 const axios = require('axios');
 
 // Get current Spotify profile

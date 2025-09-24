@@ -4,10 +4,10 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
-require('./config/passport');
+require('./config/passport.js');
 
-const authRoutes = require('./routes/auth');
-const spotifyRoutes = require('./routes/spotify');
+const authRoutes = require('./routes/auth.js');
+const spotifyRoutes = require('./routes/spotify.js');
 
 const app = express();
 app.use(express.json());
