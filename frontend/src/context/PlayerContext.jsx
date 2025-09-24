@@ -1,30 +1,13 @@
-import React, { createContext, useState, useRef } from 'react';
+import { createContext, useState } from 'react';
 
 export const PlayerContext = createContext();
 
 export const PlayerProvider = ({ children }) => {
-  const audioRef = useRef(new Audio());
-  const [currentSong, setCurrentSong] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const playSong = (song) => {
-    if (currentSong?.fileUrl !== song.fileUrl) {
-      audioRef.current.src = song.fileUrl;
-      setCurrentSong(song);
-    }
-    audioRef.current.play();
-    setIsPlaying(true);
-  };
-
-  const pause = () => {
-    audioRef.current.pause();
-    setIsPlaying(false);
-  };
-
-  audioRef.current.onended = () => setIsPlaying(false);
+  const [currentTrack, setCurrentTrack] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
 
   return (
-    <PlayerContext.Provider value={{ currentSong, isPlaying, playSong, pause }}>
+    <PlayerContext.Provider value={{ currentTrack, setCurrentTrack, deviceId, setDeviceId }}>
       {children}
     </PlayerContext.Provider>
   );

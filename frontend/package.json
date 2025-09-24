@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.12.2",
+    "jsonwebtoken": "^9.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-h5-audio-player": "^3.10.1",

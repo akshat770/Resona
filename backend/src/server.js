@@ -1,25 +1,26 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const session = require('express-session');
 const passport = require('passport');
-const cookieSession = require('cookie-session');
-require('./passport-setup');
+const cors = require('cors');
+require('./config/passport');
+
+const authRoutes = require('./routes/auth');
+const spotifyRoutes = require('./routes/spotify');
 
 const app = express();
 app.use(express.json());
-app.use(cookieSession({
-  name:'session',
-  keys:[process.env.SESSION_KEY],
-  maxAge:24*60*60*1000
-}));
+app.use(cors({ origin: process.env.FRONTEND_URI, credentials: true }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Connect Mongo
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser:true, useUnifiedTopology:true });
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error(err));
 
-// Routes
-app.use('/auth', require('./routes/auth'));
-app.use('/api/songs', require('./routes/songs'));
+app.use('/auth', authRoutes);
+app.use('/api', spotifyRoutes);
 
-app.listen(process.env.PORT||5000, ()=> console.log('Server running'));
+app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
