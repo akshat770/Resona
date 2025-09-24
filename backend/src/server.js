@@ -12,7 +12,7 @@ const spotifyRoutes = require('./routes/spotify.js');
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: process.env.FRONTEND_URI, credentials: true }));
-app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: false }));
+app.use(session({ secret: process.env.SESSION_KEY, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
