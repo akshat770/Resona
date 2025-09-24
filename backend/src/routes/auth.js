@@ -1,16 +1,20 @@
 const router = require('express').Router();
 const passport = require('passport');
-const jwt = require('jsonwebtoken');
 
-// Google OAuth routes
-router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', passport.authenticate('google', { scope: ['profile','email'] }));
 
-router.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
+router.get('/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
-    // Successful login, redirect somewhere
-    res.redirect('/dashboard'); 
+    // Redirect to frontend after successful login
+    res.redirect(`${process.env.FRONTEND_URI}/app`);
   }
 );
+
+router.get('/logout', (req, res) => {
+  req.logout(() => {
+    res.redirect(process.env.FRONTEND_URI);
+  });
+});
 
 module.exports = router;
