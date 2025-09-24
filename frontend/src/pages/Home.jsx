@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
-import { PlayerContext } from '../context/playerContext';
+import { PlayerContext } from '../context/PlayerContext.jsx';
 
 export default function Home() {
   const [songs, setSongs] = useState([]);
