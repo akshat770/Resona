@@ -3,7 +3,7 @@ import axios from 'axios';
 
 export default function Home() {
   const [user, setUser] = useState(null);
-  const backendUrl = process.env.VITE_BACKEND || 'http://localhost:5000';
+  const backendUrl = import.meta.env.VITE_BACKEND || 'http://localhost:5000';
 
   useEffect(() => {
     const fetchUser = async () => {
