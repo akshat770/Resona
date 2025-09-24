@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Upload from './pages/Upload';
-import { PlayerProvider } from './context/playerContext';
+import { PlayerProvider } from './context/PlayerContext';
 
 function App() {
   return (
