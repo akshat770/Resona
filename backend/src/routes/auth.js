@@ -2,14 +2,15 @@ const router = require('express').Router();
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 
-// Google OAuth login
-router.get('/google', passport.authenticate('google', { scope: ['profile','email'] }));
+// Google OAuth routes
+router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
+router.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
-    const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.redirect(`${process.env.FRONTEND_URI}/app?token=${token}`);
-  });
+    // Successful login, redirect somewhere
+    res.redirect('/dashboard'); 
+  }
+);
 
 module.exports = router;
