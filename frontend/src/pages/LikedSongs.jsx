@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import { Link } from "react-router-dom";
 
 export default function LikedSongs() {
   const [songs, setSongs] = useState([]);
-  const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
 
   useEffect(() => {
-    axios.get(`${backendURL}/spotify/liked`, { withCredentials: true })
+    api.get("/spotify/liked")
       .then(res => setSongs(res.data))
       .catch(err => console.error(err));
   }, []);
