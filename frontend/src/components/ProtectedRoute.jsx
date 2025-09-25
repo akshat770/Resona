@@ -5,6 +5,8 @@ import api from "../api/axios";
 export default function ProtectedRoute({ children }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
+
 
   useEffect(() => {
     api.get(`${backendURL}/dashboard`)
