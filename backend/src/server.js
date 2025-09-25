@@ -27,7 +27,6 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 // --------------------
 // ✅ Session Setup (optional, can keep for Passport)
