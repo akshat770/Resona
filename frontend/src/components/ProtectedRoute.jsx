@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    api.get("${backendURL}/dashboard")
+    api.get(`${backendURL}/dashboard`)
       .then(res => {
         setUser(res.data.user);
         setLoading(false);
@@ -20,5 +20,5 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) return <div className="text-white">Loading...</div>;
 
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? children : <Navigate to="/" replace />;
 }
