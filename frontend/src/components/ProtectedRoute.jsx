@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    api.get("/dashboard")
+    api.get("${backendURL}/dashboard")
       .then(res => {
         setUser(res.data.user);
         setLoading(false);
