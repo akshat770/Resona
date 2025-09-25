@@ -1,51 +1,62 @@
-import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
-import { PlayerContext } from '../context/PlayerContext';
-import Layout from '../components/Layout';
-import PlaylistCard from '../components/PlaylistCard';
+import { useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
-  const [profile, setProfile] = useState(null);
   const [playlists, setPlaylists] = useState([]);
-  const { setCurrentTrack, deviceId } = useContext(PlayerContext);
+  const backendURL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  const token = localStorage.getItem('token');
+  const connectSpotify = () => {
+    window.location.href = `${backendURL}/spotify/login`;
+  };
 
-  useEffect(() => {
-    if (!token) return;
-    const headers = { Authorization: `Bearer ${token}` };
-    axios.get('https://api.spotify.com/v1/me', { headers })
-      .then(res => setProfile(res.data))
+  const loadPlaylists = () => {
+    axios.get(`${backendURL}/spotify/playlists`, { withCredentials: true })
+      .then(res => setPlaylists(res.data))
       .catch(err => console.error(err));
+  };
 
-    axios.get('https://api.spotify.com/v1/me/playlists', { headers })
-      .then(res => setPlaylists(res.data.items))
-      .catch(err => console.error(err));
-  }, []);
-
-  const playTrack = (uri) => {
-    if (!deviceId || !token) return;
-    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ uris: [uri] }),
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-    });
-    setCurrentTrack({ uri });
-  }
+  const logout = () => {
+    window.location.href = `${backendURL}/auth/logout`;
+  };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold">Good to see you, {profile?.display_name}</h2>
-          <div className="text-white/60">Here’s your music at a glance</div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {playlists.map(p => (
-            <PlaylistCard key={p.id} playlist={p} onClick={() => playTrack(p.uri)} />
-          ))}
-        </div>
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+
+      <button
+        onClick={connectSpotify}
+        className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg mb-4"
+      >
+        Connect Spotify
+      </button>
+
+      <button
+        onClick={loadPlaylists}
+        className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg mb-4 ml-2"
+      >
+        Load Playlists
+      </button>
+
+      <button
+        onClick={logout}
+        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg mb-4 ml-2"
+      >
+        Logout
+      </button>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {playlists.map((pl) => (
+          <div key={pl.id} className="bg-gray-800 p-4 rounded-lg shadow-lg">
+            <p className="font-bold">{pl.name}</p>
+            <p className="text-sm">{pl.tracks.total} tracks</p>
+          </div>
+        ))}
       </div>
-    </Layout>
+
+      <Link to="/liked" className="block mt-6 text-green-400 hover:underline">
+        View Liked Songs →
+      </Link>
+    </div>
   );
 }

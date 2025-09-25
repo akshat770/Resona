@@ -1,45 +1,66 @@
-const router = require('express').Router();
-const auth = require('../middlewares/auth.js');
-const User = require('../models/User.js');
-const axios = require('axios');
+const express = require("express");
+const SpotifyWebApi = require("spotify-web-api-node");
+const requireAuth = require("../middleware/auth");
 
-// Get current Spotify profile
-router.get('/me', auth, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  if (!user.spotifyAccessToken) return res.status(400).json({ message: 'Connect Spotify first' });
+const router = express.Router();
 
-  const r = await axios.get('https://api.spotify.com/v1/me', {
-    headers: { Authorization: `Bearer ${user.spotifyAccessToken}` }
-  });
-  res.json(r.data);
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
-// Get user playlists
-router.get('/playlists', auth, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  const r = await axios.get('https://api.spotify.com/v1/me/playlists', {
-    headers: { Authorization: `Bearer ${user.spotifyAccessToken}` }
-  });
-  res.json(r.data);
+// Spotify login
+router.get("/login", requireAuth, (req, res) => {
+  const scopes = [
+    "user-read-email",
+    "user-library-read",
+    "playlist-read-private",
+    "playlist-modify-private",
+    "playlist-modify-public",
+  ];
+  res.redirect(spotifyApi.createAuthorizeURL(scopes));
+});
+
+// Spotify callback
+router.get("/callback", requireAuth, async (req, res) => {
+  const { code } = req.query;
+
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+
+    req.user.spotifyAccessToken = data.body.access_token;
+    req.user.spotifyRefreshToken = data.body.refresh_token;
+    await req.user.save();
+
+    res.redirect("http://localhost:5173/dashboard");
+  } catch (err) {
+    res.status(500).json({ error: "Spotify auth failed" });
+  }
 });
 
 // Get liked songs
-router.get('/liked', auth, async (req, res) => {
-  const user = await User.findById(req.user.id);
-  const r = await axios.get('https://api.spotify.com/v1/me/tracks', {
-    headers: { Authorization: `Bearer ${user.spotifyAccessToken}` }
-  });
-  res.json(r.data);
+router.get("/liked", requireAuth, async (req, res) => {
+  spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+
+  try {
+    const data = await spotifyApi.getMySavedTracks({ limit: 10 });
+    res.json(data.body.items);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch liked songs" });
+  }
 });
 
-// Start playback on Web Playback SDK device
-router.put('/player/play', auth, async (req, res) => {
-  const { device_id, uris } = req.body;
-  const user = await User.findById(req.user.id);
-  await axios.put(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, { uris }, {
-    headers: { Authorization: `Bearer ${user.spotifyAccessToken}` }
-  });
-  res.sendStatus(204);
+// Get playlists
+router.get("/playlists", requireAuth, async (req, res) => {
+  spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+
+  try {
+    const data = await spotifyApi.getUserPlaylists(req.user.spotifyId);
+    res.json(data.body.items);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch playlists" });
+  }
 });
 
 module.exports = router;

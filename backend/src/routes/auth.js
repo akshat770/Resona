@@ -1,28 +1,28 @@
-const router = require('express').Router();
-const passport = require('passport');
-const jwt = require('jsonwebtoken');
+const express = require("express");
+const passport = require("passport");
 
-router.get('/google', passport.authenticate('google', { scope: ['profile','email'] }));
+const router = express.Router();
 
-router.get('/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
+// Google login
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+// Google callback
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    // Issue JWT and redirect to frontend with token
-    try {
-      const token = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-      const url = new URL(`${process.env.FRONTEND_URI}/app`);
-      url.searchParams.set('token', token);
-      res.redirect(url.toString());
-    } catch (e) {
-      // fallback to session-only redirect
-      res.redirect(`${process.env.FRONTEND_URI}/app`);
-    }
+    res.redirect("http://localhost:5173/dashboard"); // frontend URL
   }
 );
 
-router.get('/logout', (req, res) => {
-  req.logout(() => {
-    res.redirect(process.env.FRONTEND_URI);
+// Logout
+router.get("/logout", (req, res) => {
+  req.logout(err => {
+    if (err) return res.status(500).json({ error: "Logout failed" });
+    res.redirect("http://localhost:5173/"); // back to login page
   });
 });
 
