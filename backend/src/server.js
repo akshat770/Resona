@@ -37,8 +37,9 @@ app.use(
       collectionName: "sessions",
     }),
     cookie: {
-      secure: true,
-      sameSite: "none",
+      secure: true,         // true on production HTTPS (Railway is HTTPS)
+      sameSite: "none",     // allows cross-site cookies
+      maxAge: 24 * 60 * 60 * 1000 // optional: 1 day in milliseconds
     },
   })
 );
