@@ -13,11 +13,19 @@ export default function Dashboard() {
   const loadPlaylists = () => {
     axios.get(`${backendURL}/spotify/playlists`, { withCredentials: true })
       .then(res => setPlaylists(res.data))
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        if (err.response?.status === 401) {
+          // Redirect to login if not authenticated
+          window.location.href = "/";
+        }
+      });
   };
 
   const logout = () => {
-    window.location.href = `${backendURL}/auth/logout`;
+    axios.get(`${backendURL}/auth/logout`, { withCredentials: true })
+      .then(() => window.location.href = "/")
+      .catch(err => console.error(err));
   };
 
   return (

@@ -22,7 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
 // ✅ Middleware
 // --------------------
 app.use(cors({
-  origin: process.env.FRONTEND_URI || "http://localhost:5173",
+  origin: process.env.FRONTEND_URI || "http://localhost:5173" || "https://resona-mauve.vercel.app",
   credentials: true,
 }));
 
@@ -37,10 +37,8 @@ app.use(
       collectionName: "sessions",
     }),
     cookie: {
-      secure: process.env.NODE_ENV === "production", // true only in HTTPS
-      httpOnly: true, // prevents client-side JS access
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      secure: True,
+      sameSite: "none",
     },
   })
 );
