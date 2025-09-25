@@ -18,6 +18,12 @@ router.get(
   }
 );
 
+// Verify session - returns 200 if authenticated, else 401
+router.get('/verify', (req, res) => {
+  if (req.user) return res.json({ ok: true });
+  return res.status(401).json({ ok: false });
+});
+
 // Logout
 router.get("/logout", (req, res) => {
   req.logout(err => {

@@ -29,7 +29,7 @@ app.use(cors({
 // ✅ Session setup with MongoDB store
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "supersecret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({

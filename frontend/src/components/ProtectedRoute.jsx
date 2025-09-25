@@ -9,9 +9,9 @@ export default function ProtectedRoute({ children }) {
 
 
   useEffect(() => {
-    api.get(`${backendURL}/dashboard`)
-      .then(res => {
-        setUser(res.data.user);
+    api.get(`/auth/verify`)
+      .then(() => {
+        setUser(true);
         setLoading(false);
       })
       .catch(() => {
