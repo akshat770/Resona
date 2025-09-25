@@ -1,8 +1,6 @@
 const express = require("express");
 const SpotifyWebApi = require("spotify-web-api-node");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-
+const requireAuth = require("../middleware/auth");
 const router = express.Router();
 
 const spotifyApi = new SpotifyWebApi({
@@ -11,21 +9,8 @@ const spotifyApi = new SpotifyWebApi({
   redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
-async function verifyJWT(req, res, next) {
-  const token = req.headers["authorization"]?.split(" ")[1] || req.query.token;
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(payload.id);
-    if (!req.user) return res.status(401).json({ error: "User not found" });
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
-  }
-}
-
-// Spotify login
-router.get("/login", verifyJWT, (req, res) => {
+// Connect Spotify
+router.get("/login", requireAuth, (req, res) => {
   const scopes = [
     "user-read-email",
     "user-library-read",
@@ -33,47 +18,82 @@ router.get("/login", verifyJWT, (req, res) => {
     "playlist-modify-private",
     "playlist-modify-public",
   ];
-  const url = spotifyApi.createAuthorizeURL(scopes);
-  res.redirect(url);
+  res.redirect(spotifyApi.createAuthorizeURL(scopes));
 });
 
 // Spotify callback
-router.get("/callback", async (req, res) => {
+router.get("/callback", requireAuth, async (req, res) => {
   const { code } = req.query;
+  if (!code) return res.status(400).json({ error: "Missing code" });
+
   try {
     const data = await spotifyApi.authorizationCodeGrant(code);
-    const user = await User.findById(req.query.userId);
-    user.spotifyAccessToken = data.body.access_token;
-    user.spotifyRefreshToken = data.body.refresh_token;
-    await user.save();
-    const frontend = process.env.FRONTEND_URI || "http://localhost:5173";
-    res.redirect(`${frontend}/dashboard`);
+    req.user.spotifyAccessToken = data.body.access_token;
+    req.user.spotifyRefreshToken = data.body.refresh_token;
+    req.user.spotifyExpiresAt = Date.now() + data.body.expires_in * 1000;
+
+    spotifyApi.setAccessToken(data.body.access_token);
+    const profile = await spotifyApi.getMe();
+    req.user.spotifyId = profile.body.id;
+    await req.user.save();
+
+    res.redirect(`${process.env.FRONTEND_URI || "https://resona-mauve.vercel.app"}/dashboard`);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Spotify auth failed" });
+    res.status(500).json({ error: "Spotify authentication failed" });
   }
 });
 
-// Get playlists
-router.get("/playlists", verifyJWT, async (req, res) => {
-  if (!req.user.spotifyAccessToken) return res.status(400).json({ error: "Connect Spotify first" });
-  spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+// Helper: refresh token
+async function refreshSpotifyToken(user) {
+  if (!user.spotifyRefreshToken) return false;
+  spotifyApi.setRefreshToken(user.spotifyRefreshToken);
   try {
+    const data = await spotifyApi.refreshAccessToken();
+    user.spotifyAccessToken = data.body.access_token;
+    user.spotifyExpiresAt = Date.now() + data.body.expires_in * 1000;
+    await user.save();
+    spotifyApi.setAccessToken(user.spotifyAccessToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Playlists
+router.get("/playlists", requireAuth, async (req, res) => {
+  try {
+    if (!req.user.spotifyAccessToken) return res.status(400).json({ error: "Spotify not connected" });
+
+    if (req.user.spotifyExpiresAt && Date.now() > req.user.spotifyExpiresAt) {
+      const refreshed = await refreshSpotifyToken(req.user);
+      if (!refreshed) return res.status(401).json({ error: "Spotify token expired" });
+    }
+
+    spotifyApi.setAccessToken(req.user.spotifyAccessToken);
     const data = await spotifyApi.getUserPlaylists(req.user.spotifyId || undefined);
     res.json(data.body.items);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch playlists" });
   }
 });
 
-// Get liked songs
-router.get("/liked", verifyJWT, async (req, res) => {
-  if (!req.user.spotifyAccessToken) return res.status(400).json({ error: "Connect Spotify first" });
-  spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+// Liked songs
+router.get("/liked", requireAuth, async (req, res) => {
   try {
+    if (!req.user.spotifyAccessToken) return res.status(400).json({ error: "Spotify not connected" });
+
+    if (req.user.spotifyExpiresAt && Date.now() > req.user.spotifyExpiresAt) {
+      const refreshed = await refreshSpotifyToken(req.user);
+      if (!refreshed) return res.status(401).json({ error: "Spotify token expired" });
+    }
+
+    spotifyApi.setAccessToken(req.user.spotifyAccessToken);
     const data = await spotifyApi.getMySavedTracks({ limit: 10 });
     res.json(data.body.items);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch liked songs" });
   }
 });
