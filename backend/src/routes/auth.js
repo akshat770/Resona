@@ -27,16 +27,3 @@ router.get('/logout', (req, res) => {
 });
 
 module.exports = router;
-// Verify endpoint: accepts either session or JWT
-router.get('/verify', (req, res) => {
-  if (req.user) return res.json({ ok: true, method: 'session' });
-  const auth = req.headers['authorization'];
-  const token = auth?.startsWith('Bearer ') ? auth.split(' ')[1] : null;
-  if (!token) return res.status(401).json({ ok: false });
-  try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    return res.json({ ok: true, method: 'jwt' });
-  } catch (e) {
-    return res.status(401).json({ ok: false });
-  }
-});
