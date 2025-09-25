@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
+  // Accept either session-based user or JWT in Authorization header
+  if (req.user) return next();
   const authHeader = req.headers['authorization'];
   const token = authHeader?.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'No token provided' });

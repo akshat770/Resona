@@ -6,10 +6,15 @@ export default function AppHome() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // After Google OAuth callback, the backend redirects here.
-    // Check session on backend and route accordingly.
-    axios
-      .get('/user/me')
+    // Support hybrid: token query param OR session via /user/me
+    const qs = new URLSearchParams(window.location.search);
+    const token = qs.get('token');
+    if (token) {
+      localStorage.setItem('jwt', token);
+      navigate('/dashboard');
+      return;
+    }
+    axios.get('/user/me')
       .then(() => navigate('/dashboard'))
       .catch(() => navigate('/'));
   }, []);
