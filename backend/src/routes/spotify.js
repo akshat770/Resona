@@ -33,7 +33,7 @@ router.get("/callback", requireAuth, async (req, res) => {
     req.user.spotifyRefreshToken = data.body.refresh_token;
     await req.user.save();
 
-    res.redirect("http://localhost:5173/dashboard");
+    res.redirect("https://resona-mauve.vercel.app/dashboard");
   } catch (err) {
     res.status(500).json({ error: "Spotify auth failed" });
   }

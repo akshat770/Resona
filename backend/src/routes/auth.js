@@ -14,7 +14,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect("http://localhost:5173/dashboard"); // frontend URL
+    res.redirect("https://resona-mauve.vercel.app/dashboard"); // frontend URL
   }
 );
 
@@ -22,7 +22,7 @@ router.get(
 router.get("/logout", (req, res) => {
   req.logout(err => {
     if (err) return res.status(500).json({ error: "Logout failed" });
-    res.redirect("http://localhost:5173/"); // back to login page
+    res.redirect("https://resona-mauve.vercel.app/"); // back to login page
   });
 });
 

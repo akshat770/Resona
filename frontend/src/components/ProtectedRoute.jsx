@@ -1,19 +1,24 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 
 export default function ProtectedRoute({ children }) {
-  const [auth, setAuth] = useState(null);
-  const backendURL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    axios.get(`${backendURL}/dashboard`, { withCredentials: true })
-      .then(() => setAuth(true))
-      .catch(() => setAuth(false));
+    api.get("/dashboard")
+      .then(res => {
+        setUser(res.data.user);
+        setLoading(false);
+      })
+      .catch(() => {
+        setUser(null);
+        setLoading(false);
+      });
   }, []);
 
-  if (auth === null) return <p className="text-white">Checking auth...</p>;
-  if (!auth) return <Navigate to="/" />;
+  if (loading) return <div className="text-white">Loading...</div>;
 
-  return children;
+  return user ? children : <Navigate to="/login" replace />;
 }
