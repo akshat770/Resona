@@ -52,6 +52,11 @@ app.use(passport.session());
 app.use("/auth", authRoutes);
 app.use("/spotify", spotifyRoutes);
 
+// Compatibility route used by some clients
+app.get("/spotify/login", (req, res) => {
+  res.redirect("/auth/google");
+});
+
 // ✅ Protected dashboard
 app.get("/dashboard", requireAuth, (req, res) => {
   res.json({ user: req.user });
