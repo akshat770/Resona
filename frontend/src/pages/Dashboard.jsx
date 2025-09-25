@@ -4,6 +4,8 @@ import api from "../api/axios";
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState([]);
   const [liked, setLiked] = useState([]);
+  const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
+
 
   const loadData = async () => {
     try {
@@ -26,7 +28,7 @@ export default function Dashboard() {
   useEffect(() => { loadData(); }, []);
 
   const connectSpotify = () => {
-    window.location.href = "/spotify/login";
+  window.location.href = `${backendURL}/spotify/login`;
   };
 
   const logout = async () => {
