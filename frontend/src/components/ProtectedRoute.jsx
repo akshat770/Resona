@@ -1,40 +1,54 @@
+import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
 import api from "../api/axios";
 
-export default function ProtectedRoute() {
-  const location = useLocation();
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+export default function ProtectedRoute({ children }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // check if token is in URL (after Google redirect)
-    const params = new URLSearchParams(location.search);
-    const tokenFromUrl = params.get("token");
-
-    if (tokenFromUrl) {
-      localStorage.setItem("jwt", tokenFromUrl);
-      // clean URL (remove ?token=...)
-      window.history.replaceState({}, document.title, location.pathname);
-    }
-
-    async function verifyToken() {
+    const verifyToken = async () => {
       try {
-        await api.get("/auth/verify");
-        setAuthenticated(true);
+        const qs = new URLSearchParams(window.location.search);
+        const tokenFromUrl = qs.get('token');
+
+        if (tokenFromUrl) {
+          localStorage.setItem('jwt', tokenFromUrl);
+          api.defaults.headers.common['Authorization'] = `Bearer ${tokenFromUrl}`;
+
+          const url = new URL(window.location.href);
+          url.searchParams.delete('token');
+          window.history.replaceState({}, '', url.toString());
+        }
+
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+
+        await api.get('/auth/verify');
+        setIsAuthenticated(true);
       } catch (err) {
-        console.error("Verify failed:", err);
-        localStorage.removeItem("jwt");
-        setAuthenticated(false);
+        localStorage.removeItem('jwt');
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          setIsAuthenticated(false);
+        } else {
+          setError("Couldn't verify your session. Please try again later.");
+          console.error("Verification error:", err);
+        }
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    }
+    };
 
     verifyToken();
-  }, [location]);
+  }, []);
 
-  if (loading) return <div className="text-center p-6">Loading...</div>;
+  if (isLoading) return <div className="flex items-center justify-center h-screen text-white bg-gray-900">Loading...</div>;
+  if (error) return <div className="flex items-center justify-center h-screen text-red-500 bg-gray-900">{error}</div>;
 
-  return authenticated ? <Outlet /> : <Navigate to="/" />;
+  return isAuthenticated ? children : <Navigate to="/" replace />;
 }
