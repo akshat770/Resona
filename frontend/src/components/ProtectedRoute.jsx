@@ -9,7 +9,21 @@ export default function ProtectedRoute({ children }) {
 
 
   useEffect(() => {
-    api.get(`/auth/verify`)
+    // Capture JWT from URL ?token=... if present
+    const qs = new URLSearchParams(window.location.search);
+    const t = qs.get('token');
+    if (t) {
+      localStorage.setItem('jwt', t);
+      // Optional: clean token from URL (soft redirect)
+      const url = new URL(window.location.href);
+      url.searchParams.delete('token');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    const jwt = localStorage.getItem('jwt');
+    const headers = jwt ? { Authorization: `Bearer ${jwt}` } : undefined;
+
+    api.get(`/auth/verify`, { headers })
       .then(() => {
         setUser(true);
         setLoading(false);
