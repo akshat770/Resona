@@ -1,10 +1,8 @@
-import axios from 'axios';
-
-const token = localStorage.getItem('jwt');
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND || 'http://localhost:5000',
-  headers: token ? { Authorization: `Bearer ${token}` } : {},
+  baseURL: import.meta.env.VITE_BACKEND || "http://localhost:5000",
+  withCredentials: true
 });
 
 export default api;
