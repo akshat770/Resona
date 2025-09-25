@@ -1,4 +1,5 @@
 import React from 'react';
+const backendUrl = import.meta.env.VITE_BACKEND || 'http://localhost:5000';
 
 export default function Header() {
   return (
@@ -11,7 +12,7 @@ export default function Header() {
             className="px-3 py-1.5 rounded-md text-sm bg-white/10 hover:bg-white/20"
           >Home</a>
           <a
-            href="/auth/logout"
+            href={`${backendUrl}/auth/logout`}
             className="px-3 py-1.5 rounded-md text-sm bg-red-500/80 hover:bg-red-500"
           >Logout</a>
         </div>

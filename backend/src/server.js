@@ -10,9 +10,20 @@ const authRoutes = require('./routes/auth.js');
 const spotifyRoutes = require('./routes/spotify.js');
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_URI, credentials: true }));
-app.use(session({ secret: process.env.SESSION_KEY, resave: false, saveUninitialized: false }));
+const allowedOrigins = [process.env.FRONTEND_URI, 'http://localhost:5173'].filter(Boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(session({
+  secret: process.env.SESSION_KEY,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  }
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
