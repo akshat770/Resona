@@ -23,4 +23,11 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/auth', authRoutes);
 app.use('/api', spotifyRoutes);
 
+// Return the currently authenticated user (via session)
+app.get('/user/me', (req, res) => {
+  if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+  const { id, displayName, email } = req.user;
+  res.json({ id, displayName, email });
+});
+
 app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));

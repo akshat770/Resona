@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
-import axiosInstance from '../api/axios';
+import axios from 'axios';
 import { PlayerContext } from '../context/PlayerContext';
+import Layout from '../components/Layout';
+import PlaylistCard from '../components/PlaylistCard';
 
 export default function Dashboard() {
   const [profile, setProfile] = useState(null);
@@ -10,35 +12,40 @@ export default function Dashboard() {
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    // fetch profile
-    axiosInstance.get('/api/me', { headers: { Authorization: `Bearer ${token}` } })
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+    axios.get('https://api.spotify.com/v1/me', { headers })
       .then(res => setProfile(res.data))
       .catch(err => console.error(err));
 
-    // fetch playlists
-    axiosInstance.get('/api/playlists', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get('https://api.spotify.com/v1/me/playlists', { headers })
       .then(res => setPlaylists(res.data.items))
       .catch(err => console.error(err));
   }, []);
 
   const playTrack = (uri) => {
-    if (!deviceId) return;
-    axiosInstance.put('/api/player/play', { device_id: deviceId, uris: [uri] }, { headers: { Authorization: `Bearer ${token}` } });
+    if (!deviceId || !token) return;
+    fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ uris: [uri] }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    });
     setCurrentTrack({ uri });
   }
 
   return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white">
-      <h2 className="text-3xl font-bold mb-6">Welcome, {profile?.display_name}</h2>
-      <h3 className="text-xl mb-4">Your Playlists</h3>
-      <ul className="grid grid-cols-3 gap-4">
-        {playlists.map(p => (
-          <li key={p.id} className="bg-gray-800 p-4 rounded hover:bg-gray-700 cursor-pointer"
-              onClick={() => playTrack(p.uri)}>
-            {p.name}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold">Good to see you, {profile?.display_name}</h2>
+          <div className="text-white/60">Here’s your music at a glance</div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {playlists.map(p => (
+            <PlaylistCard key={p.id} playlist={p} onClick={() => playTrack(p.uri)} />
+          ))}
+        </div>
+      </div>
+    </Layout>
   );
 }
