@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState([]);
-  const backendURL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
 
   const connectSpotify = () => {
     window.location.href = `${backendURL}/spotify/login`;

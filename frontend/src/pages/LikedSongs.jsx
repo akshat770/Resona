@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 export default function LikedSongs() {
   const [songs, setSongs] = useState([]);
-  const backendURL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
 
   useEffect(() => {
     axios.get(`${backendURL}/spotify/liked`, { withCredentials: true })

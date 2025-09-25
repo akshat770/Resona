@@ -1,5 +1,5 @@
 export default function Login() {
-    const backendURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
   
     return (
       <div className="flex items-center justify-center h-screen bg-black text-white">
