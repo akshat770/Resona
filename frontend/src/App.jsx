@@ -11,10 +11,18 @@ function TokenHandler({ children }) {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
-
+    
+    console.log("TokenHandler - Current URL:", window.location.href);
+    console.log("TokenHandler - Token found:", !!token);
+    
     if (token) {
       localStorage.setItem('jwt', token);
+      console.log("TokenHandler - Token stored, current localStorage:", localStorage.getItem('jwt'));
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Force a small delay to ensure ProtectedRoute re-runs
+      setTimeout(() => {
+        console.log("TokenHandler - After cleanup, localStorage:", localStorage.getItem('jwt'));
+      }, 100);
     }
   }, []);
 
@@ -25,15 +33,13 @@ export default function App() {
   return (
     <PlayerProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={
-            <TokenHandler>
-              <ProtectedRoute><Dashboard /></ProtectedRoute>
-            </TokenHandler>
-          } />
-          <Route path="/liked" element={<ProtectedRoute><LikedSongs /></ProtectedRoute>} />
-        </Routes>
+        <TokenHandler>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/liked" element={<ProtectedRoute><LikedSongs /></ProtectedRoute>} />
+          </Routes>
+        </TokenHandler>
       </BrowserRouter>
     </PlayerProvider>
   );
