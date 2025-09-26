@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/auth");
+const spotifyRoutes = require("./routes/spotify"); // <-- new
 
 const app = express();
 
@@ -24,14 +25,22 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// --------------------
+// ✅ Middleware
+// --------------------
+app.use(express.json());
 
 // --------------------
 // ✅ Routes
 // --------------------
 app.use("/auth", authRoutes);
+app.use("/auth", spotifyRoutes); // <-- Spotify OAuth
 
 // Health check
 app.get("/", (req, res) => res.send("Server running with Spotify Auth"));
 
+// --------------------
+// ✅ Server start
+// --------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
