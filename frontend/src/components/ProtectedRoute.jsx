@@ -1,4 +1,3 @@
-// ProtectedRoute.jsx
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
@@ -10,6 +9,7 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const verifySession = async () => {
       try {
+        // Get token from localStorage
         const token = localStorage.getItem("jwt");
         if (!token) {
           setIsAuthenticated(false);
@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children }) {
         setIsAuthenticated(true);
       } catch (err) {
         console.log("Not authenticated:", err?.response?.status);
-        localStorage.removeItem("jwt");
+        localStorage.removeItem("jwt"); // remove invalid token
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);

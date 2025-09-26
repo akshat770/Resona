@@ -10,35 +10,47 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem("jwt");
-      if (!token) return (window.location.href = "/");
-
       try {
+        const tokenFromUrl = new URLSearchParams(window.location.search).get("token");
+        const token = tokenFromUrl || localStorage.getItem("jwt");
+
+        if (!token) {
+          window.location.href = "/";
+          return;
+        }
+
+        // Store token if coming from redirect
+        if (tokenFromUrl) {
+          localStorage.setItem("jwt", tokenFromUrl);
+          window.history.replaceState({}, document.title, "/dashboard");
+        }
+
         // Verify session
         await api.get("/auth/verify", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Get profile
+        // Fetch Spotify profile
         const profileRes = await api.get("/spotify/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
 
-        // Get playlists
+        // Fetch playlists
         const playlistsRes = await api.get("/spotify/playlists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlaylists(playlistsRes.data.items);
 
-        // Get recently played
+        // Fetch recently played tracks
         const recentRes = await api.get("/spotify/recently-played", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRecent(recentRes.data.items);
+
         if (recentRes.data.items.length) setCurrentTrack(recentRes.data.items[0].track);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching Spotify data:", err);
         localStorage.removeItem("jwt");
         window.location.href = "/";
       }
@@ -56,16 +68,16 @@ export default function Dashboard() {
 
   const nextTrack = () => {
     if (!currentTrack || !recent.length) return;
-    const currentIndex = recent.findIndex((r) => r.track.id === currentTrack.id);
-    const next = recent[(currentIndex + 1) % recent.length].track;
+    const idx = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const next = recent[(idx + 1) % recent.length].track;
     setCurrentTrack(next);
     setIsPlaying(true);
   };
 
   const prevTrack = () => {
     if (!currentTrack || !recent.length) return;
-    const currentIndex = recent.findIndex((r) => r.track.id === currentTrack.id);
-    const prev = recent[(currentIndex - 1 + recent.length) % recent.length].track;
+    const idx = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const prev = recent[(idx - 1 + recent.length) % recent.length].track;
     setCurrentTrack(prev);
     setIsPlaying(true);
   };
