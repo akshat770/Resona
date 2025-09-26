@@ -23,8 +23,11 @@ export default function ProtectedRoute({ children }) {
 
         setIsAuthenticated(true);
       } catch (err) {
-        console.log("Not authenticated:", err?.response?.status);
-        localStorage.removeItem("jwt"); // remove invalid token
+        console.log("Authentication verification failed:");
+        console.log("Status:", err?.response?.status);
+        console.log("Error:", err?.response?.data);
+        console.log("Token exists:", !!localStorage.getItem("jwt"));
+        localStorage.removeItem("jwt");
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
