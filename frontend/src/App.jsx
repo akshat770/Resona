@@ -6,23 +6,16 @@ import LikedSongs from "./pages/LikedSongs";
 import { PlayerProvider } from "./context/PlayerContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Create TokenHandler component:
+// Fixed TokenHandler component
 function TokenHandler({ children }) {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     
-    console.log("TokenHandler - Current URL:", window.location.href);
-    console.log("TokenHandler - Token found:", !!token);
-    
     if (token) {
+      // Use consistent key 'jwt' to match ProtectedRoute
       localStorage.setItem('jwt', token);
-      console.log("TokenHandler - Token stored, current localStorage:", localStorage.getItem('jwt'));
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Force a small delay to ensure ProtectedRoute re-runs
-      setTimeout(() => {
-        console.log("TokenHandler - After cleanup, localStorage:", localStorage.getItem('jwt'));
-      }, 100);
     }
   }, []);
 

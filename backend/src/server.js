@@ -3,20 +3,16 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/auth");
-const spotifyRoutes = require("./routes/spotify"); // <-- new
+const spotifyApiRoutes = require("./routes/spotify-api"); // New routes
 
 const app = express();
 
-// --------------------
-// ✅ DB Connection
-// --------------------
+// DB Connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
-// --------------------
-// ✅ CORS Setup
-// --------------------
+// CORS Setup
 const corsOptions = {
   origin: process.env.FRONTEND_URI || "https://resona-mauve.vercel.app",
   credentials: true,
@@ -25,22 +21,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// --------------------
-// ✅ Middleware
-// --------------------
+// Middleware
 app.use(express.json());
 
-// --------------------
-// ✅ Routes
-// --------------------
+// Routes
 app.use("/auth", authRoutes);
-app.use("/auth", spotifyRoutes); // <-- Spotify OAuth
+app.use("/spotify", spotifyApiRoutes); // Fixed: Separate route mounting
 
 // Health check
 app.get("/", (req, res) => res.send("Server running with Spotify Auth"));
 
-// --------------------
-// ✅ Server start
-// --------------------
+// Server start
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
