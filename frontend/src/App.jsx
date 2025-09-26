@@ -1,10 +1,10 @@
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import LikedSongs from "./pages/LikedSongs";
 import { PlayerProvider } from "./context/PlayerContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useEffect } from "react";
 
 // Create TokenHandler component:
 function TokenHandler({ children }) {
@@ -32,7 +32,6 @@ export default function App() {
               <ProtectedRoute><Dashboard /></ProtectedRoute>
             </TokenHandler>
           } />
-
           <Route path="/liked" element={<ProtectedRoute><LikedSongs /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
