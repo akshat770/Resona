@@ -6,51 +6,12 @@ export default function Dashboard() {
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
-  const [spotifyPlayer, setSpotifyPlayer] = useState(null);
-  const [playerDeviceId, setPlayerDeviceId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Initialize Spotify Web Playback SDK
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const script = document.createElement("script");
-    script.src = "https://sdk.scdn.co/spotify-player.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      const player = new window.Spotify.Player({
-        name: "Resona Player",
-        getOAuthToken: cb => { cb(token); },
-        volume: 0.5,
-      });
-
-      player.addListener("ready", ({ device_id }) => {
-        console.log("Ready with Device ID", device_id);
-        setPlayerDeviceId(device_id);
-      });
-
-      player.addListener("player_state_changed", state => {
-        if (!state) return;
-        setCurrentTrack(state.track_window.current_track);
-        setIsPlaying(!state.paused);
-      });
-
-      player.connect();
-      setSpotifyPlayer(player);
-    };
-  }, []);
-
-  // Fetch user info, playlists, and recent tracks
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
-        return;
-      }
+      const token = localStorage.getItem("jwt");
+      if (!token) return (window.location.href = "/");
 
       try {
         // Verify session
@@ -58,31 +19,27 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Fetch Spotify profile
+        // Get profile
         const profileRes = await api.get("/spotify/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
 
-        // Fetch playlists
+        // Get playlists
         const playlistsRes = await api.get("/spotify/playlists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlaylists(playlistsRes.data.items);
 
-        // Fetch recently played
+        // Get recently played
         const recentRes = await api.get("/spotify/recently-played", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRecent(recentRes.data.items);
-
-        // Set first track as current
-        if (recentRes.data.items.length > 0) {
-          setCurrentTrack(recentRes.data.items[0].track);
-        }
+        if (recentRes.data.items.length) setCurrentTrack(recentRes.data.items[0].track);
       } catch (err) {
-        console.error("Error fetching Spotify data:", err);
-        localStorage.removeItem("token");
+        console.error(err);
+        localStorage.removeItem("jwt");
         window.location.href = "/";
       }
     };
@@ -90,31 +47,27 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // Play selected track
-  const playTrack = async (trackUri) => {
-    if (!playerDeviceId) return;
-    try {
-      await fetch(
-        `https://api.spotify.com/v1/me/player/play?device_id=${playerDeviceId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify({ uris: [trackUri] }),
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      setIsPlaying(true);
-    } catch (err) {
-      console.error("Playback error:", err);
-    }
+  const playTrack = (track) => {
+    setCurrentTrack(track);
+    setIsPlaying(true);
   };
 
-  const togglePlay = () => {
-    if (!spotifyPlayer) return;
-    spotifyPlayer.togglePlay();
-    setIsPlaying(!isPlaying);
+  const togglePlay = () => setIsPlaying((prev) => !prev);
+
+  const nextTrack = () => {
+    if (!currentTrack || !recent.length) return;
+    const currentIndex = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const next = recent[(currentIndex + 1) % recent.length].track;
+    setCurrentTrack(next);
+    setIsPlaying(true);
+  };
+
+  const prevTrack = () => {
+    if (!currentTrack || !recent.length) return;
+    const currentIndex = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const prev = recent[(currentIndex - 1 + recent.length) % recent.length].track;
+    setCurrentTrack(prev);
+    setIsPlaying(true);
   };
 
   if (!user)
@@ -130,31 +83,20 @@ export default function Dashboard() {
       <aside className="w-64 bg-gray-800 p-6 flex flex-col">
         <h1 className="text-2xl font-bold mb-8">Resona</h1>
         <nav className="flex flex-col gap-4">
-          <a href="#" className="hover:text-green-400 transition-colors">
-            Home
-          </a>
-          <a href="#" className="hover:text-green-400 transition-colors">
-            Search
-          </a>
-          <a href="#" className="hover:text-green-400 transition-colors">
-            Library
-          </a>
-          <a href="#" className="hover:text-green-400 transition-colors">
-            Playlists
-          </a>
+          <a href="#" className="hover:text-green-400 transition-colors">Home</a>
+          <a href="#" className="hover:text-green-400 transition-colors">Search</a>
+          <a href="#" className="hover:text-green-400 transition-colors">Library</a>
+          <a href="#" className="hover:text-green-400 transition-colors">Playlists</a>
         </nav>
         <div className="mt-auto text-gray-400 text-sm">
           Logged in as {user.display_name || "User"}
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="flex-1 p-8 overflow-y-auto">
-        {/* Top bar */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">
-            Welcome, {user.display_name || "User"}
-          </h2>
+          <h2 className="text-3xl font-bold">Welcome, {user.display_name || "User"}</h2>
           <input
             type="text"
             placeholder="Search..."
@@ -170,7 +112,7 @@ export default function Dashboard() {
               <div
                 key={pl.id}
                 className="bg-gray-800 p-4 rounded-xl hover:scale-105 transition-transform cursor-pointer"
-                onClick={() => playTrack(pl.tracks.items?.[0]?.track?.uri)} // play first track
+                onClick={() => playTrack(pl.tracks.items?.[0]?.track)}
               >
                 <img
                   src={pl.images[0]?.url || "/placeholder.png"}
@@ -178,9 +120,7 @@ export default function Dashboard() {
                   className="rounded-lg mb-4 w-full h-32 object-cover"
                 />
                 <p className="font-semibold truncate">{pl.name}</p>
-                <p className="text-gray-400 text-sm mt-1">
-                  {pl.tracks.total} tracks
-                </p>
+                <p className="text-gray-400 text-sm mt-1">{pl.tracks.total} tracks</p>
               </div>
             ))}
           </div>
@@ -194,7 +134,7 @@ export default function Dashboard() {
               <div
                 key={r.track.id}
                 className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 hover:scale-105 transition-transform cursor-pointer"
-                onClick={() => playTrack(r.track.uri)}
+                onClick={() => playTrack(r.track)}
               >
                 <img
                   src={r.track.album.images[0]?.url || "/placeholder.png"}
@@ -213,7 +153,7 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* Now Playing Bar */}
+      {/* Now Playing */}
       {currentTrack && (
         <footer className="fixed bottom-0 left-64 right-0 bg-gray-800 p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -224,15 +164,13 @@ export default function Dashboard() {
             />
             <div>
               <p className="font-semibold">{currentTrack.name}</p>
-              <p className="text-gray-400 text-sm">
-                {currentTrack.artists.map((a) => a.name).join(", ")}
-              </p>
+              <p className="text-gray-400 text-sm">{currentTrack.artists.map((a) => a.name).join(", ")}</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <button onClick={() => spotifyPlayer?.previousTrack()}>⏮</button>
+            <button onClick={prevTrack}>⏮</button>
             <button onClick={togglePlay}>{isPlaying ? "⏸" : "▶️"}</button>
-            <button onClick={() => spotifyPlayer?.nextTrack()}>⏭</button>
+            <button onClick={nextTrack}>⏭</button>
           </div>
         </footer>
       )}
