@@ -1,35 +1,56 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import api from "../api/axios"; // backend axios instance
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [playlists, setPlaylists] = useState([]);
+  const [recent, setRecent] = useState([]);
+  const [currentTrack, setCurrentTrack] = useState(null);
 
   useEffect(() => {
-    const verify = async () => {
-      const token = new URLSearchParams(window.location.search).get("token");
-      if (token) {
-        localStorage.setItem("token", token);
-        window.history.replaceState({}, document.title, "/dashboard");
-      }
-
-      const storedToken = localStorage.getItem("token");
-      if (!storedToken) {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
         window.location.href = "/";
         return;
       }
 
       try {
+        // Verify session
         await api.get("/auth/verify", {
-          headers: { Authorization: `Bearer ${storedToken}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
-        // Fetch Spotify profile or set placeholder
-        setUser({ name: "Resona User" });
-      } catch {
+
+        // Fetch Spotify user profile
+        const profileRes = await api.get("/spotify/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(profileRes.data);
+
+        // Fetch user playlists
+        const playlistsRes = await api.get("/spotify/playlists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setPlaylists(playlistsRes.data.items);
+
+        // Fetch recently played tracks
+        const recentRes = await api.get("/spotify/recently-played", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setRecent(recentRes.data.items);
+
+        // Set first track as current
+        if (recentRes.data.items.length > 0) {
+          setCurrentTrack(recentRes.data.items[0].track);
+        }
+      } catch (err) {
+        console.error("Error fetching Spotify data:", err);
         localStorage.removeItem("token");
         window.location.href = "/";
       }
     };
-    verify();
+
+    fetchData();
   }, []);
 
   if (!user)
@@ -45,19 +66,31 @@ export default function Dashboard() {
       <aside className="w-64 bg-gray-800 p-6 flex flex-col">
         <h1 className="text-2xl font-bold mb-8">Resona</h1>
         <nav className="flex flex-col gap-4">
-          <a href="#" className="hover:text-green-400 transition-colors">Home</a>
-          <a href="#" className="hover:text-green-400 transition-colors">Search</a>
-          <a href="#" className="hover:text-green-400 transition-colors">Library</a>
-          <a href="#" className="hover:text-green-400 transition-colors">Playlists</a>
+          <a href="#" className="hover:text-green-400 transition-colors">
+            Home
+          </a>
+          <a href="#" className="hover:text-green-400 transition-colors">
+            Search
+          </a>
+          <a href="#" className="hover:text-green-400 transition-colors">
+            Library
+          </a>
+          <a href="#" className="hover:text-green-400 transition-colors">
+            Playlists
+          </a>
         </nav>
-        <div className="mt-auto text-gray-400 text-sm">Logged in as {user.name}</div>
+        <div className="mt-auto text-gray-400 text-sm">
+          Logged in as {user.display_name || "User"}
+        </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 p-8 overflow-y-auto">
         {/* Top bar */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Welcome, {user.name}</h2>
+          <h2 className="text-3xl font-bold">
+            Welcome, {user.display_name || "User"}
+          </h2>
           <input
             type="text"
             placeholder="Search..."
@@ -65,36 +98,48 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Featured playlists */}
+        {/* Featured Playlists */}
         <section className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Featured</h3>
+          <h3 className="text-xl font-semibold mb-4">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
+            {playlists.map((pl) => (
               <div
-                key={i}
-                className="bg-gray-800 p-4 rounded-xl hover:scale-105 transition-transform"
+                key={pl.id}
+                className="bg-gray-800 p-4 rounded-xl hover:scale-105 transition-transform cursor-pointer"
               >
-                <div className="bg-green-600 h-32 w-full rounded-lg mb-4"></div>
-                <p className="font-semibold">Playlist {i + 1}</p>
-                <p className="text-gray-400 text-sm">Description here</p>
+                <img
+                  src={pl.images[0]?.url || "/placeholder.png"}
+                  alt={pl.name}
+                  className="rounded-lg mb-4 w-full h-32 object-cover"
+                />
+                <p className="font-semibold truncate">{pl.name}</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  {pl.tracks.total} tracks
+                </p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Recently played */}
+        {/* Recently Played */}
         <section>
           <h3 className="text-xl font-semibold mb-4">Recently Played</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
+            {recent.map((r) => (
               <div
-                key={i}
-                className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 hover:scale-105 transition-transform"
+                key={r.track.id}
+                className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 hover:scale-105 transition-transform cursor-pointer"
               >
-                <div className="bg-green-500 h-16 w-16 rounded-lg"></div>
-                <div>
-                  <p className="font-semibold">Song {i + 1}</p>
-                  <p className="text-gray-400 text-sm">Artist Name</p>
+                <img
+                  src={r.track.album.images[0]?.url || "/placeholder.png"}
+                  alt={r.track.name}
+                  className="w-16 h-16 rounded object-cover flex-shrink-0"
+                />
+                <div className="overflow-hidden">
+                  <p className="font-semibold text-sm truncate">{r.track.name}</p>
+                  <p className="text-gray-400 text-xs truncate">
+                    {r.track.artists.map((a) => a.name).join(", ")}
+                  </p>
                 </div>
               </div>
             ))}
@@ -103,20 +148,28 @@ export default function Dashboard() {
       </main>
 
       {/* Now Playing Bar */}
-      <footer className="fixed bottom-0 left-64 right-0 bg-gray-800 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="bg-green-500 w-12 h-12 rounded-lg"></div>
-          <div>
-            <p className="font-semibold">Current Song</p>
-            <p className="text-gray-400 text-sm">Artist Name</p>
+      {currentTrack && (
+        <footer className="fixed bottom-0 left-64 right-0 bg-gray-800 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img
+              src={currentTrack.album.images[0]?.url || "/placeholder.png"}
+              alt={currentTrack.name}
+              className="w-12 h-12 rounded-lg"
+            />
+            <div>
+              <p className="font-semibold">{currentTrack.name}</p>
+              <p className="text-gray-400 text-sm">
+                {currentTrack.artists.map((a) => a.name).join(", ")}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <button>⏮</button>
-          <button>▶️</button>
-          <button>⏭</button>
-        </div>
-      </footer>
+          <div className="flex items-center gap-6">
+            <button>⏮</button>
+            <button>▶️</button>
+            <button>⏭</button>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
