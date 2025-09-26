@@ -1,12 +1,49 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios"; // backend axios instance
+import api from "../api/axios";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
   const [currentTrack, setCurrentTrack] = useState(null);
+  const [spotifyPlayer, setSpotifyPlayer] = useState(null);
+  const [playerDeviceId, setPlayerDeviceId] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
+  // Initialize Spotify Web Playback SDK
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const script = document.createElement("script");
+    script.src = "https://sdk.scdn.co/spotify-player.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const player = new window.Spotify.Player({
+        name: "Resona Player",
+        getOAuthToken: cb => { cb(token); },
+        volume: 0.5,
+      });
+
+      player.addListener("ready", ({ device_id }) => {
+        console.log("Ready with Device ID", device_id);
+        setPlayerDeviceId(device_id);
+      });
+
+      player.addListener("player_state_changed", state => {
+        if (!state) return;
+        setCurrentTrack(state.track_window.current_track);
+        setIsPlaying(!state.paused);
+      });
+
+      player.connect();
+      setSpotifyPlayer(player);
+    };
+  }, []);
+
+  // Fetch user info, playlists, and recent tracks
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("token");
@@ -21,19 +58,19 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Fetch Spotify user profile
+        // Fetch Spotify profile
         const profileRes = await api.get("/spotify/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
 
-        // Fetch user playlists
+        // Fetch playlists
         const playlistsRes = await api.get("/spotify/playlists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlaylists(playlistsRes.data.items);
 
-        // Fetch recently played tracks
+        // Fetch recently played
         const recentRes = await api.get("/spotify/recently-played", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -52,6 +89,33 @@ export default function Dashboard() {
 
     fetchData();
   }, []);
+
+  // Play selected track
+  const playTrack = async (trackUri) => {
+    if (!playerDeviceId) return;
+    try {
+      await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${playerDeviceId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ uris: [trackUri] }),
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setIsPlaying(true);
+    } catch (err) {
+      console.error("Playback error:", err);
+    }
+  };
+
+  const togglePlay = () => {
+    if (!spotifyPlayer) return;
+    spotifyPlayer.togglePlay();
+    setIsPlaying(!isPlaying);
+  };
 
   if (!user)
     return (
@@ -84,7 +148,7 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main Content */}
       <main className="flex-1 p-8 overflow-y-auto">
         {/* Top bar */}
         <div className="flex justify-between items-center mb-6">
@@ -98,7 +162,7 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Featured Playlists */}
+        {/* Playlists */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-4">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -106,6 +170,7 @@ export default function Dashboard() {
               <div
                 key={pl.id}
                 className="bg-gray-800 p-4 rounded-xl hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => playTrack(pl.tracks.items?.[0]?.track?.uri)} // play first track
               >
                 <img
                   src={pl.images[0]?.url || "/placeholder.png"}
@@ -129,6 +194,7 @@ export default function Dashboard() {
               <div
                 key={r.track.id}
                 className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => playTrack(r.track.uri)}
               >
                 <img
                   src={r.track.album.images[0]?.url || "/placeholder.png"}
@@ -164,9 +230,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <button>⏮</button>
-            <button>▶️</button>
-            <button>⏭</button>
+            <button onClick={() => spotifyPlayer?.previousTrack()}>⏮</button>
+            <button onClick={togglePlay}>{isPlaying ? "⏸" : "▶️"}</button>
+            <button onClick={() => spotifyPlayer?.nextTrack()}>⏭</button>
           </div>
         </footer>
       )}

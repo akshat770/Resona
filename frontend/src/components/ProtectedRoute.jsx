@@ -6,37 +6,18 @@ import api from "../api/axios";
 export default function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const verifySession = async () => {
       try {
-        // Get token from localStorage
-        const token = localStorage.getItem("jwt");
-        if (!token) {
-          setIsAuthenticated(false);
-          return;
-        }
-
-        // Call backend with Authorization header
-        await api.get("/auth/verify", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        await api.get("/auth/verify", { withCredentials: true });
         setIsAuthenticated(true);
-      } catch (err) {
+      } catch {
         setIsAuthenticated(false);
-        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          console.log("Not authenticated");
-        } else {
-          setError("Couldn't verify your session. Please try again later.");
-          console.error("Verification error:", err);
-        }
       } finally {
         setIsLoading(false);
       }
     };
-
     verifySession();
   }, []);
 
@@ -44,13 +25,6 @@ export default function ProtectedRoute({ children }) {
     return (
       <div className="flex items-center justify-center h-screen text-white bg-gray-900">
         Loading...
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="flex items-center justify-center h-screen text-red-500 bg-gray-900">
-        {error}
       </div>
     );
 
