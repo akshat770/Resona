@@ -4,7 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import LikedSongs from "./pages/LikedSongs";
 import { PlayerProvider } from "./context/PlayerContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import { useEffect } from "react";
 
 // Create TokenHandler component:
 function TokenHandler({ children }) {
