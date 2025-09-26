@@ -11,9 +11,18 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     const verifySession = async () => {
       try {
-        // Call backend to verify session
-        // Include credentials (cookies) in request
-        await api.get("/auth/verify", { withCredentials: true });
+        // Get token from localStorage
+        const token = localStorage.getItem("jwt");
+        if (!token) {
+          setIsAuthenticated(false);
+          return;
+        }
+
+        // Call backend with Authorization header
+        await api.get("/auth/verify", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
         setIsAuthenticated(true);
       } catch (err) {
         setIsAuthenticated(false);
@@ -45,6 +54,5 @@ export default function ProtectedRoute({ children }) {
       </div>
     );
 
-  // Redirect to login if not authenticated
   return isAuthenticated ? children : <Navigate to="/" replace />;
 }
