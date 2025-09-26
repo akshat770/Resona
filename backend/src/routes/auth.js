@@ -1,28 +1,71 @@
 const express = require("express");
-const passport = require("passport");
+const SpotifyWebApi = require("spotify-web-api-node");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 
-// Google login
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// Spotify OAuth setup
+const spotifyApi = new SpotifyWebApi({
+  clientId: process.env.SPOTIFY_CLIENT_ID,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
+});
 
-// Google callback
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    const token = jwt.sign({ id: req.user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    const frontend = process.env.FRONTEND_URI || 'https://resona-mauve.vercel.app';
+// --------------------
+// ✅ Step 1: Redirect to Spotify login
+// --------------------
+router.get("/spotify", (req, res) => {
+  const scopes = [
+    "user-read-email",
+    "user-library-read",
+    "playlist-read-private",
+    "playlist-modify-private",
+    "playlist-modify-public",
+  ];
+  const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
+  res.redirect(authorizeURL);
+});
+
+// --------------------
+// ✅ Step 2: Handle Spotify callback
+// --------------------
+router.get("/spotify/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).send("Missing authorization code");
+
+  try {
+    const data = await spotifyApi.authorizationCodeGrant(code);
+    const accessToken = data.body.access_token;
+    const refreshToken = data.body.refresh_token;
+
+    spotifyApi.setAccessToken(accessToken);
+
+    const me = await spotifyApi.getMe();
+
+    // Issue JWT
+    const token = jwt.sign(
+      {
+        id: me.body.id,
+        email: me.body.email,
+        accessToken,
+        refreshToken,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const frontend = process.env.FRONTEND_URI || "https://resona-mauve.vercel.app";
     const url = new URL(`${frontend}/dashboard`);
-    url.searchParams.set('token', token);
+    url.searchParams.set("token", token);
     res.redirect(url.toString());
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Spotify authentication failed");
   }
-);
+});
 
-// Verify JWT
+// --------------------
+// ✅ Step 3: Verify JWT
+// --------------------
 router.get("/verify", (req, res) => {
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI || "https://resona-mauve.vercel.app");
@@ -37,14 +80,6 @@ router.get("/verify", (req, res) => {
   } catch {
     return res.status(401).json({ ok: false });
   }
-});
-
-// Logout
-router.get("/logout", (req, res) => {
-  req.logout(err => {
-    if (err) return res.status(500).json({ error: "Logout failed" });
-    res.redirect(process.env.FRONTEND_URI || "https://resona-mauve.vercel.app");
-  });
 });
 
 module.exports = router;
