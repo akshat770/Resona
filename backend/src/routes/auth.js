@@ -1,164 +1,89 @@
-const express = require('express');
-const SpotifyWebApi = require('spotify-web-api-node');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-
+const express = require("express");
+const SpotifyWebApi = require("spotify-web-api-node");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 
+// Spotify OAuth setup
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-  redirectUri: process.env.SPOTIFY_REDIRECT_URI
+  redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
-// Login route with ALL required scopes
-router.get("/login", (req, res) => {
+// ✅ FIXED: Route name matches frontend expectation
+router.get("/spotify", (req, res) => {
   const scopes = [
-    'user-read-private',
-    'user-read-email',
-    'user-read-recently-played',   // FOR RECENT TRACKS
-    'user-library-read',           // FOR LIKED SONGS
-    'playlist-read-private',
-    'playlist-read-collaborative',
-    'user-read-playback-state',
-    'user-modify-playback-state',
-    'user-read-currently-playing',
-    'streaming'
+    "user-read-email",
+    "user-read-private",
+    "user-read-recently-played",   // FOR RECENT TRACKS
+    "user-library-read",           // FOR LIKED SONGS
+    "playlist-read-private",
+    "playlist-modify-private",
+    "playlist-modify-public",
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-read-currently-playing",
+    "streaming"
   ];
-
-  const state = 'some-state-of-my-choice';
-  const authorizeURL = spotifyApi.createAuthorizeURL(scopes, state);
   
-  console.log("🎵 Auth URL with scopes:", authorizeURL);
+  const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
+  console.log("🎵 Redirecting to Spotify with scopes:", scopes.join(', '));
   res.redirect(authorizeURL);
 });
 
-// Callback route
-router.get("/callback", async (req, res) => {
-  const { code, error } = req.query;
-
-  if (error) {
-    console.error("❌ Spotify auth error:", error);
-    return res.redirect(`${process.env.FRONTEND_URI}/?error=${error}`);
-  }
+// ✅ FIXED: Route name matches Spotify redirect URI
+router.get("/spotify/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).send("Missing authorization code");
 
   try {
-    // Exchange code for tokens
     const data = await spotifyApi.authorizationCodeGrant(code);
-    const { access_token, refresh_token, expires_in } = data.body;
+    const accessToken = data.body.access_token;
+    const refreshToken = data.body.refresh_token;
 
-    console.log("✅ Tokens received successfully");
+    spotifyApi.setAccessToken(accessToken);
 
-    // Set tokens for API calls
-    spotifyApi.setAccessToken(access_token);
-    spotifyApi.setRefreshToken(refresh_token);
+    const me = await spotifyApi.getMe();
 
-    // Get user profile
-    const userProfile = await spotifyApi.getMe();
-    const spotifyUser = userProfile.body;
+    // Issue JWT with all necessary data
+    const token = jwt.sign(
+      {
+        id: me.body.id,
+        email: me.body.email,
+        displayName: me.body.display_name,
+        accessToken,
+        refreshToken,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    console.log("✅ User profile fetched:", spotifyUser.id);
-
-    // Save/update user in database
-    let user = await User.findOne({ spotifyId: spotifyUser.id });
+    const frontend = process.env.FRONTEND_URI || "https://resona-mauve.vercel.app";
+    const url = new URL(`${frontend}/dashboard`);
+    url.searchParams.set("token", token);
     
-    if (!user) {
-      user = new User({
-        spotifyId: spotifyUser.id,
-        email: spotifyUser.email,
-        displayName: spotifyUser.display_name,
-        profileImage: spotifyUser.images?.[0]?.url || null,
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        tokenExpires: new Date(Date.now() + expires_in * 1000)
-      });
-      await user.save();
-      console.log("✅ New user created");
-    } else {
-      // Update existing user's tokens
-      user.accessToken = access_token;
-      user.refreshToken = refresh_token;
-      user.tokenExpires = new Date(Date.now() + expires_in * 1000);
-      await user.save();
-      console.log("✅ Existing user updated");
-    }
-
-    // Create JWT with proper payload
-    const jwtPayload = {
-      id: user._id,
-      spotifyId: spotifyUser.id,
-      accessToken: access_token,
-      refreshToken: refresh_token,
-      email: spotifyUser.email,
-      displayName: spotifyUser.display_name
-    };
-
-    const token = jwt.sign(jwtPayload, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-    // Redirect with token
-    const frontend = process.env.FRONTEND_URI;
-    const redirectUrl = `${frontend}/dashboard?token=${token}`;
-    
-    console.log("🎯 Redirecting to:", redirectUrl);
-    res.redirect(redirectUrl);
-
-  } catch (error) {
-    console.error("❌ Callback error:", error);
-    res.redirect(`${process.env.FRONTEND_URI}/?error=auth_failed`);
+    console.log("🎯 Redirecting to:", url.toString());
+    res.redirect(url.toString());
+  } catch (err) {
+    console.error("❌ Spotify authentication failed:", err);
+    res.status(500).send("Spotify authentication failed");
   }
 });
 
-// Verify JWT token
-router.get("/verify", async (req, res) => {
+// Verify JWT
+router.get("/verify", (req, res) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URI || "https://resona-mauve.vercel.app");
+
+  const auth = req.headers["authorization"];
+  const token = auth?.startsWith("Bearer ") ? auth.split(" ")[1] : null;
+  if (!token) return res.status(401).json({ ok: false });
+
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Check if user still exists
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    // Check if token is expired
-    if (user.tokenExpires && user.tokenExpires < new Date()) {
-      console.log("🔄 Token expired, attempting refresh...");
-      
-      try {
-        spotifyApi.setRefreshToken(user.refreshToken);
-        const data = await spotifyApi.refreshAccessToken();
-        
-        // Update tokens
-        user.accessToken = data.body.access_token;
-        user.tokenExpires = new Date(Date.now() + data.body.expires_in * 1000);
-        await user.save();
-        
-        console.log("✅ Token refreshed successfully");
-      } catch (refreshError) {
-        console.error("❌ Token refresh failed:", refreshError);
-        return res.status(401).json({ error: 'Token refresh failed' });
-      }
-    }
-
-    res.json({ 
-      message: 'Token valid', 
-      user: {
-        id: user._id,
-        spotifyId: user.spotifyId,
-        email: user.email,
-        displayName: user.displayName
-      }
-    });
-
-  } catch (error) {
-    console.error("❌ Token verification error:", error);
-    res.status(401).json({ error: 'Invalid token' });
+    jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({ ok: true });
+  } catch {
+    return res.status(401).json({ ok: false });
   }
 });
 
