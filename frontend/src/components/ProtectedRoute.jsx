@@ -1,3 +1,4 @@
+// ProtectedRoute.jsx
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
@@ -8,33 +9,16 @@ export default function ProtectedRoute({ children }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verifySession = async () => {
       try {
-        const qs = new URLSearchParams(window.location.search);
-        const tokenFromUrl = qs.get('token');
-
-        if (tokenFromUrl) {
-          localStorage.setItem('jwt', tokenFromUrl);
-          api.defaults.headers.common['Authorization'] = `Bearer ${tokenFromUrl}`;
-
-          const url = new URL(window.location.href);
-          url.searchParams.delete('token');
-          window.history.replaceState({}, '', url.toString());
-        }
-
-        const token = localStorage.getItem('jwt');
-        if (!token) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-
-        await api.get('/auth/verify');
+        // Call backend to verify session
+        // Include credentials (cookies) in request
+        await api.get("/auth/verify", { withCredentials: true });
         setIsAuthenticated(true);
       } catch (err) {
-        localStorage.removeItem('jwt');
+        setIsAuthenticated(false);
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          setIsAuthenticated(false);
+          console.log("Not authenticated");
         } else {
           setError("Couldn't verify your session. Please try again later.");
           console.error("Verification error:", err);
@@ -44,11 +28,23 @@ export default function ProtectedRoute({ children }) {
       }
     };
 
-    verifyToken();
+    verifySession();
   }, []);
 
-  if (isLoading) return <div className="flex items-center justify-center h-screen text-white bg-gray-900">Loading...</div>;
-  if (error) return <div className="flex items-center justify-center h-screen text-red-500 bg-gray-900">{error}</div>;
+  if (isLoading)
+    return (
+      <div className="flex items-center justify-center h-screen text-white bg-gray-900">
+        Loading...
+      </div>
+    );
 
+  if (error)
+    return (
+      <div className="flex items-center justify-center h-screen text-red-500 bg-gray-900">
+        {error}
+      </div>
+    );
+
+  // Redirect to login if not authenticated
   return isAuthenticated ? children : <Navigate to="/" replace />;
 }
