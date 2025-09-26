@@ -10,21 +10,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Use the same token key as login flow
+      const token = localStorage.getItem("token");
+      if (!token) return window.location.href = "/";
+
       try {
-        const tokenFromUrl = new URLSearchParams(window.location.search).get("token");
-        const token = tokenFromUrl || localStorage.getItem("jwt");
-
-        if (!token) {
-          window.location.href = "/";
-          return;
-        }
-
-        // Store token if coming from redirect
-        if (tokenFromUrl) {
-          localStorage.setItem("jwt", tokenFromUrl);
-          window.history.replaceState({}, document.title, "/dashboard");
-        }
-
         // Verify session
         await api.get("/auth/verify", {
           headers: { Authorization: `Bearer ${token}` },
@@ -47,11 +37,10 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRecent(recentRes.data.items);
-
         if (recentRes.data.items.length) setCurrentTrack(recentRes.data.items[0].track);
       } catch (err) {
         console.error("Error fetching Spotify data:", err);
-        localStorage.removeItem("jwt");
+        localStorage.removeItem("token");
         window.location.href = "/";
       }
     };
@@ -64,11 +53,11 @@ export default function Dashboard() {
     setIsPlaying(true);
   };
 
-  const togglePlay = () => setIsPlaying((prev) => !prev);
+  const togglePlay = () => setIsPlaying(prev => !prev);
 
   const nextTrack = () => {
     if (!currentTrack || !recent.length) return;
-    const idx = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const idx = recent.findIndex(r => r.track.id === currentTrack.id);
     const next = recent[(idx + 1) % recent.length].track;
     setCurrentTrack(next);
     setIsPlaying(true);
@@ -76,7 +65,7 @@ export default function Dashboard() {
 
   const prevTrack = () => {
     if (!currentTrack || !recent.length) return;
-    const idx = recent.findIndex((r) => r.track.id === currentTrack.id);
+    const idx = recent.findIndex(r => r.track.id === currentTrack.id);
     const prev = recent[(idx - 1 + recent.length) % recent.length].track;
     setCurrentTrack(prev);
     setIsPlaying(true);
@@ -105,8 +94,9 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main content */}
       <main className="flex-1 p-8 overflow-y-auto">
+        {/* Top bar */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold">Welcome, {user.display_name || "User"}</h2>
           <input
@@ -120,7 +110,7 @@ export default function Dashboard() {
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-4">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {playlists.map((pl) => (
+            {playlists.map(pl => (
               <div
                 key={pl.id}
                 className="bg-gray-800 p-4 rounded-xl hover:scale-105 transition-transform cursor-pointer"
@@ -142,7 +132,7 @@ export default function Dashboard() {
         <section>
           <h3 className="text-xl font-semibold mb-4">Recently Played</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recent.map((r) => (
+            {recent.map(r => (
               <div
                 key={r.track.id}
                 className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 hover:scale-105 transition-transform cursor-pointer"
@@ -156,7 +146,7 @@ export default function Dashboard() {
                 <div className="overflow-hidden">
                   <p className="font-semibold text-sm truncate">{r.track.name}</p>
                   <p className="text-gray-400 text-xs truncate">
-                    {r.track.artists.map((a) => a.name).join(", ")}
+                    {r.track.artists.map(a => a.name).join(", ")}
                   </p>
                 </div>
               </div>
@@ -176,7 +166,7 @@ export default function Dashboard() {
             />
             <div>
               <p className="font-semibold">{currentTrack.name}</p>
-              <p className="text-gray-400 text-sm">{currentTrack.artists.map((a) => a.name).join(", ")}</p>
+              <p className="text-gray-400 text-sm">{currentTrack.artists.map(a => a.name).join(", ")}</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
