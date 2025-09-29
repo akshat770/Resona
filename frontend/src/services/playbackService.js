@@ -1,8 +1,10 @@
+// frontend/src/services/playbackService.js
 class PlaybackService {
   constructor() {
     this.deviceId = null;
     this.accessToken = null;
     this.isReady = false;
+    this.deviceActivated = false;
   }
 
   setDeviceId(deviceId) {
@@ -16,6 +18,34 @@ class PlaybackService {
     console.log('Access token set');
   }
 
+  async activateDevice() {
+    if (!this.deviceId || !this.accessToken || this.deviceActivated) return true;
+
+    try {
+      console.log('Activating device...');
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`
+        },
+        body: JSON.stringify({
+          device_ids: [this.deviceId],
+          play: false
+        })
+      });
+
+      if (response.ok || response.status === 204) {
+        console.log('Device activated successfully');
+        this.deviceActivated = true;
+        return true;
+      }
+    } catch (error) {
+      console.log('Device activation failed, but continuing...');
+    }
+    return false;
+  }
+
   async playTrack(trackUri) {
     if (!this.deviceId || !this.accessToken) {
       console.error('Device or token not ready');
@@ -23,9 +53,14 @@ class PlaybackService {
     }
 
     try {
+      // First activate the device
+      await this.activateDevice();
+      
+      // Small delay to ensure activation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       console.log('Playing track:', trackUri);
       
-      // Skip the transfer step, just play directly
       const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
         method: 'PUT',
         headers: {
@@ -40,30 +75,12 @@ class PlaybackService {
       if (response.ok || response.status === 204) {
         console.log('Track started playing');
       } else {
-        // If 404, try without device_id parameter
+        const errorText = await response.text();
+        console.error('Playback failed:', response.status, errorText);
+        
+        // Show user-friendly error
         if (response.status === 404) {
-          console.log('Retrying without device_id...');
-          const retryResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${this.accessToken}`
-            },
-            body: JSON.stringify({
-              uris: [trackUri],
-              device_id: this.deviceId
-            })
-          });
-          
-          if (retryResponse.ok || retryResponse.status === 204) {
-            console.log('Track started playing (retry successful)');
-          } else {
-            const errorText = await retryResponse.text();
-            console.error('Retry failed:', retryResponse.status, errorText);
-          }
-        } else {
-          const errorText = await response.text();
-          console.error('Playback failed:', response.status, errorText);
+          alert('No active device found. Please:\n1. Open Spotify app on your phone/computer\n2. Play any song\n3. Try again');
         }
       }
     } catch (error) {
@@ -78,6 +95,12 @@ class PlaybackService {
     }
 
     try {
+      // First activate the device
+      await this.activateDevice();
+      
+      // Small delay to ensure activation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       console.log('Playing playlist:', playlistUri);
       
       const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
@@ -94,28 +117,14 @@ class PlaybackService {
 
       if (response.ok || response.status === 204) {
         console.log('Playlist started playing');
-      } else if (response.status === 404) {
-        // Retry without device_id in URL
-        console.log('Retrying playlist without device_id...');
-        const retryResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.accessToken}`
-          },
-          body: JSON.stringify({
-            context_uri: playlistUri,
-            offset: { position: trackOffset },
-            device_id: this.deviceId
-          })
-        });
-        
-        if (retryResponse.ok || retryResponse.status === 204) {
-          console.log('Playlist started playing (retry successful)');
-        }
       } else {
         const errorText = await response.text();
         console.error('Playlist playback failed:', response.status, errorText);
+        
+        // Show user-friendly error
+        if (response.status === 404) {
+          alert('No active device found. Please:\n1. Open Spotify app on your phone/computer\n2. Play any song\n3. Try again');
+        }
       }
     } catch (error) {
       console.error('Playlist playback error:', error);
