@@ -1,2 +1,18 @@
-// optional - if you ever want to build client-only login (not used here)
-export const loginUrl = `https://accounts.spotify.com/authorize?client_id=${import.meta.env.VITE_SPOTIFY_CLIENT_ID}&redirect_uri=${encodeURIComponent(import.meta.env.VITE_SPOTIFY_REDIRECT_URI)}&response_type=token&scope=user-library-read%20playlist-read-private`;
+router.get("/spotify", (req, res) => {
+  const scopes = [
+    "user-read-email",
+    "user-read-private", 
+    "user-read-recently-played",
+    "user-library-read",
+    "playlist-read-private",
+    "playlist-modify-private",
+    "playlist-modify-public",
+    "user-read-playback-state",    // Required for playback
+    "user-modify-playback-state",  // Required for playback control
+    "user-read-currently-playing", // Required for current track
+    "streaming"                    // Required for Web Playback SDK
+  ];
+  
+  const authorizeURL = spotifyApi.createAuthorizeURL(scopes, "state123");
+  res.redirect(authorizeURL);
+});
