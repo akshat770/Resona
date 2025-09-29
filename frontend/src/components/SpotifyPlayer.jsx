@@ -70,6 +70,30 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         setPlayer(spotifyPlayer);
         setIsReady(true);
         onPlayerReady(device_id);
+
+        // AUTO-TRANSFER PLAYBACK TO WEB PLAYER
+        setTimeout(() => {
+          fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+              device_ids: [device_id],
+              play: false
+            })
+          }).then(response => {
+            console.log('Device transfer status:', response.status);
+            if (response.ok || response.status === 204) {
+              console.log('Successfully transferred to web player');
+            } else {
+              console.log('Device transfer failed - you may need to start music in Spotify app first');
+            }
+          }).catch(error => {
+            console.log('Device transfer failed (often normal):', error);
+          });
+        }, 2000);
       });
 
       // Not Ready
@@ -190,7 +214,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-400">
         <div className="flex items-center justify-center gap-2">
           <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-          <span>Player ready - Click on a song to start playing</span>
+          <span>Player ready - Start playing music in Spotify app, then control from here</span>
         </div>
       </div>
     );
