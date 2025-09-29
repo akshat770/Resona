@@ -2,7 +2,6 @@ class PlaybackService {
   constructor() {
     this.deviceId = null;
     this.accessToken = null;
-    this.currentTrack = null;
     this.isReady = false;
   }
 
@@ -17,57 +16,16 @@ class PlaybackService {
     console.log('Access token set');
   }
 
-  async waitForPlayer() {
-    // Wait for player to be ready
-    let attempts = 0;
-    while (!this.isReady && attempts < 50) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    return this.isReady;
-  }
-
-  async transferPlaybackToWebPlayer() {
-    if (!this.deviceId || !this.accessToken) return false;
-
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`
-        },
-        body: JSON.stringify({
-          device_ids: [this.deviceId],
-          play: false
-        })
-      });
-
-      if (response.ok || response.status === 204) {
-        console.log('Playback transferred to web player');
-        return true;
-      }
-    } catch (error) {
-      console.log('Playback transfer not needed or failed (this is often normal)');
-    }
-    return false;
-  }
-
   async playTrack(trackUri) {
-    if (!await this.waitForPlayer()) {
-      console.error('Player not ready after waiting');
+    if (!this.deviceId || !this.accessToken) {
+      console.error('Device or token not ready');
       return;
     }
 
     try {
       console.log('Playing track:', trackUri);
       
-      // First, transfer playback to our web player (optional)
-      await this.transferPlaybackToWebPlayer();
-      
-      // Wait a moment for the transfer
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      // Skip the transfer step, just play directly
       const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
         method: 'PUT',
         headers: {
@@ -81,10 +39,32 @@ class PlaybackService {
 
       if (response.ok || response.status === 204) {
         console.log('Track started playing');
-        this.currentTrack = trackUri;
       } else {
-        const errorText = await response.text();
-        console.error('Playback failed:', response.status, errorText);
+        // If 404, try without device_id parameter
+        if (response.status === 404) {
+          console.log('Retrying without device_id...');
+          const retryResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.accessToken}`
+            },
+            body: JSON.stringify({
+              uris: [trackUri],
+              device_id: this.deviceId
+            })
+          });
+          
+          if (retryResponse.ok || retryResponse.status === 204) {
+            console.log('Track started playing (retry successful)');
+          } else {
+            const errorText = await retryResponse.text();
+            console.error('Retry failed:', retryResponse.status, errorText);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('Playback failed:', response.status, errorText);
+        }
       }
     } catch (error) {
       console.error('Playback error:', error);
@@ -92,19 +72,13 @@ class PlaybackService {
   }
 
   async playPlaylist(playlistUri, trackOffset = 0) {
-    if (!await this.waitForPlayer()) {
-      console.error('Player not ready after waiting');
+    if (!this.deviceId || !this.accessToken) {
+      console.error('Device or token not ready');
       return;
     }
 
     try {
-      console.log('Playing playlist:', playlistUri, 'starting at track:', trackOffset);
-      
-      // Transfer playback to our web player
-      await this.transferPlaybackToWebPlayer();
-      
-      // Wait a moment for the transfer
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Playing playlist:', playlistUri);
       
       const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
         method: 'PUT',
@@ -120,6 +94,25 @@ class PlaybackService {
 
       if (response.ok || response.status === 204) {
         console.log('Playlist started playing');
+      } else if (response.status === 404) {
+        // Retry without device_id in URL
+        console.log('Retrying playlist without device_id...');
+        const retryResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.accessToken}`
+          },
+          body: JSON.stringify({
+            context_uri: playlistUri,
+            offset: { position: trackOffset },
+            device_id: this.deviceId
+          })
+        });
+        
+        if (retryResponse.ok || retryResponse.status === 204) {
+          console.log('Playlist started playing (retry successful)');
+        }
       } else {
         const errorText = await response.text();
         console.error('Playlist playback failed:', response.status, errorText);
@@ -127,23 +120,6 @@ class PlaybackService {
     } catch (error) {
       console.error('Playlist playback error:', error);
     }
-  }
-
-  async getCurrentPlaybackState() {
-    if (!this.accessToken) return null;
-    
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
-        headers: { 'Authorization': `Bearer ${this.accessToken}` }
-      });
-      
-      if (response.ok) {
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Error getting playback state:', error);
-    }
-    return null;
   }
 }
 
