@@ -69,26 +69,36 @@ export default function Dashboard() {
   };
 
   const playTrack = (track) => {
-    if (!track) return;
-    
-    playbackService.playTrack(
-      track.uri, 
-      track.preview_url
-    );
-  };
+  if (!track) return;
+  
+  console.log('Playing track:', {
+    name: track.name,
+    uri: track.uri,
+    preview_url: track.preview_url,
+    isPremium
+  });
+  
+  playbackService.playTrack(track.uri, track.preview_url);
+};
 
-  const playPlaylist = (playlist, trackIndex = 0) => {
-    if (!playlist) return;
-    
-    // Get first track's preview URL if available
-    const firstTrackPreview = playlist.tracks?.items?.[trackIndex]?.track?.preview_url;
-    
-    playbackService.playPlaylist(
-      playlist.uri, 
-      trackIndex, 
-      firstTrackPreview
-    );
-  };
+const playPlaylist = (playlist, trackIndex = 0) => {
+  if (!playlist) return;
+  
+  // Get first track's preview URL
+  let firstTrackPreview = null;
+  if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
+    firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
+  }
+  
+  console.log('Playing playlist:', {
+    name: playlist.name,
+    uri: playlist.uri,
+    preview_url: firstTrackPreview,
+    isPremium
+  });
+  
+  playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
+};
 
   if (!user) {
     return (
@@ -349,13 +359,16 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
-
-      {/* Spotify Web Player - only for Premium users */}
-      {accessToken && isPremium && (
-        <SpotifyPlayer 
-          accessToken={accessToken} 
-          onPlayerReady={handlePlayerReady}
-        />
+      
+      {accessToken && (
+        isPremium ? (
+          <SpotifyPlayer
+            accessToken={accessToken}
+            onPlayerReady={handlePlayerReady}
+          />
+        ) : (
+          <PreviewPlayer />
+        )
       )}
     </div>
   );

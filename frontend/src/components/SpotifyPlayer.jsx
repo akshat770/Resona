@@ -7,6 +7,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isReady, setIsReady] = useState(false);
   const playerRef = useRef(null);
 
   useEffect(() => {
@@ -46,8 +47,18 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
       // Playback status updates
       spotifyPlayer.addListener('player_state_changed', (state) => {
-        if (!state) return;
+        console.log('Player state changed:', state);
+        
+        if (!state) {
+          // No active playback
+          setCurrentTrack(null);
+          setIsPlaying(false);
+          setPosition(0);
+          setDuration(0);
+          return;
+        }
 
+        // Update all states based on Spotify's state
         setCurrentTrack(state.track_window.current_track);
         setIsPlaying(!state.paused);
         setPosition(state.position);
@@ -59,12 +70,14 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         console.log('Ready with Device ID', device_id);
         setDeviceId(device_id);
         setPlayer(spotifyPlayer);
+        setIsReady(true);
         onPlayerReady(device_id);
       });
 
       // Not Ready
       spotifyPlayer.addListener('not_ready', ({ device_id }) => {
         console.log('Device ID has gone offline', device_id);
+        setIsReady(false);
       });
 
       // Connect to the player!
@@ -79,25 +92,37 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   }, [accessToken, onPlayerReady]);
 
   const togglePlay = () => {
-    if (player) {
-      player.togglePlay();
+    if (player && currentTrack) {
+      player.togglePlay().then(() => {
+        console.log('Toggle play command sent');
+      }).catch(error => {
+        console.error('Toggle play failed:', error);
+      });
     }
   };
 
   const nextTrack = () => {
-    if (player) {
-      player.nextTrack();
+    if (player && currentTrack) {
+      player.nextTrack().then(() => {
+        console.log('Next track command sent');
+      }).catch(error => {
+        console.error('Next track failed:', error);
+      });
     }
   };
 
   const previousTrack = () => {
-    if (player) {
-      player.previousTrack();
+    if (player && currentTrack) {
+      player.previousTrack().then(() => {
+        console.log('Previous track command sent');
+      }).catch(error => {
+        console.error('Previous track failed:', error);
+      });
     }
   };
 
   const seek = (positionMs) => {
-    if (player) {
+    if (player && currentTrack) {
       player.seek(positionMs);
     }
   };
@@ -114,10 +139,26 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Show loading state while connecting
+  if (!isReady) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span>Connecting to Spotify...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show ready state when no track is playing
   if (!currentTrack) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400">
-        Select a song to start playing
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          <span>Premium Player Ready - Click a song to start playing</span>
+        </div>
       </div>
     );
   }
@@ -145,7 +186,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
           <div className="flex items-center gap-4">
             <button 
               onClick={previousTrack}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-gray-700"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
@@ -154,22 +195,22 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             
             <button 
               onClick={togglePlay}
-              className="bg-white text-black rounded-full w-8 h-8 flex items-center justify-center hover:scale-105 transition-transform"
+              className="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
             >
               {isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5.5 3.5A1.5 1.5 0 017 2h6a1.5 1.5 0 011.5 1.5v13a1.5 1.5 0 01-1.5 1.5H7A1.5 1.5 0 015.5 16.5v-13zM8 5v10h4V5H8z"/>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
                 </svg>
               ) : (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
                 </svg>
               )}
             </button>
             
             <button 
               onClick={nextTrack}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-gray-700"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
@@ -179,14 +220,18 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
           {/* Progress Bar */}
           <div className="flex items-center gap-2 w-full">
-            <span className="text-xs text-gray-400">{formatTime(position)}</span>
+            <span className="text-xs text-gray-400 min-w-[2.5rem] text-right">
+              {formatTime(position)}
+            </span>
             <div className="flex-1 bg-gray-600 rounded-full h-1">
               <div 
                 className="bg-green-400 h-1 rounded-full transition-all duration-100"
-                style={{ width: `${(position / duration) * 100}%` }}
+                style={{ width: `${duration > 0 ? (position / duration) * 100 : 0}%` }}
               />
             </div>
-            <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+            <span className="text-xs text-gray-400 min-w-[2.5rem]">
+              {formatTime(duration)}
+            </span>
           </div>
         </div>
 
