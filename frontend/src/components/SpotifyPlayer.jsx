@@ -13,7 +13,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   useEffect(() => {
     if (!accessToken) return;
 
-    // Load Spotify Web Playback SDK
     const script = document.createElement('script');
     script.src = 'https://sdk.scdn.co/spotify-player.js';
     script.async = true;
@@ -42,7 +41,10 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       });
 
       spotifyPlayer.addListener('playback_error', ({ message }) => {
-        console.error('Failed to perform playback:', message);
+        // Only log unexpected errors, not "no list loaded"
+        if (!message.includes('no list was loaded')) {
+          console.error('Playback error:', message);
+        }
       });
 
       // Playback status updates
@@ -50,7 +52,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         console.log('Player state changed:', state);
         
         if (!state) {
-          // No active playback
           setCurrentTrack(null);
           setIsPlaying(false);
           setPosition(0);
@@ -58,7 +59,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
           return;
         }
 
-        // Update all states based on Spotify's state
         setCurrentTrack(state.track_window.current_track);
         setIsPlaying(!state.paused);
         setPosition(state.position);
@@ -80,7 +80,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         setIsReady(false);
       });
 
-      // Connect to the player!
       spotifyPlayer.connect();
     };
 
@@ -92,45 +91,42 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   }, [accessToken, onPlayerReady]);
 
   const togglePlay = () => {
-    if (player && currentTrack) {
-      player.togglePlay().then(() => {
-        console.log('Toggle play command sent');
-      }).catch(error => {
-        console.error('Toggle play failed:', error);
-      });
+    if (!player || !currentTrack) {
+      console.log('No track loaded. Please click on a song first.');
+      return;
     }
+    
+    player.togglePlay().then(() => {
+      console.log('Toggle play successful');
+    }).catch(error => {
+      console.error('Toggle play failed:', error);
+    });
   };
 
   const nextTrack = () => {
-    if (player && currentTrack) {
-      player.nextTrack().then(() => {
-        console.log('Next track command sent');
-      }).catch(error => {
-        console.error('Next track failed:', error);
-      });
+    if (!player || !currentTrack) {
+      console.log('No track loaded. Please click on a song first.');
+      return;
     }
+    
+    player.nextTrack().then(() => {
+      console.log('Next track successful');
+    }).catch(error => {
+      console.error('Next track failed:', error);
+    });
   };
 
   const previousTrack = () => {
-    if (player && currentTrack) {
-      player.previousTrack().then(() => {
-        console.log('Previous track command sent');
-      }).catch(error => {
-        console.error('Previous track failed:', error);
-      });
+    if (!player || !currentTrack) {
+      console.log('No track loaded. Please click on a song first.');
+      return;
     }
-  };
-
-  const seek = (positionMs) => {
-    if (player && currentTrack) {
-      player.seek(positionMs);
-    }
-  };
-
-  const setVolume = (volume) => {
-    if (player) {
-      player.setVolume(volume);
-    }
+    
+    player.previousTrack().then(() => {
+      console.log('Previous track successful');
+    }).catch(error => {
+      console.error('Previous track failed:', error);
+    });
   };
 
   const formatTime = (ms) => {
@@ -139,7 +135,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Show loading state while connecting
   if (!isReady) {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
@@ -151,13 +146,12 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     );
   }
 
-  // Show ready state when no track is playing
   if (!currentTrack) {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
         <div className="flex items-center justify-center gap-2">
           <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-          <span>Premium Player Ready - Click a song to start playing</span>
+          <span>Premium Player Ready - Click on a song in the dashboard to start</span>
         </div>
       </div>
     );
@@ -246,7 +240,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             max="1"
             step="0.01"
             defaultValue="0.5"
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            onChange={(e) => player?.setVolume(parseFloat(e.target.value))}
             className="w-20 h-1 bg-gray-600 rounded-lg appearance-none slider"
           />
         </div>
