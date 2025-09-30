@@ -1,3 +1,4 @@
+// frontend/src/services/playbackService.js
 class PlaybackService {
   constructor() {
     this.deviceId = null;
@@ -17,12 +18,46 @@ class PlaybackService {
     this.accessToken = token;
   }
 
+  async transferPlaybackToWebPlayer() {
+    if (!this.deviceId || !this.accessToken) return false;
+
+    try {
+      console.log('Transferring playback to web player...');
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`
+        },
+        body: JSON.stringify({
+          device_ids: [this.deviceId],
+          play: true // IMPORTANT: Keep playing when transferring
+        })
+      });
+
+      if (response.ok || response.status === 204) {
+        console.log('Successfully transferred to web player');
+        return true;
+      }
+    } catch (error) {
+      console.log('Transfer failed:', error);
+    }
+    return false;
+  }
+
   async playTrack(trackUri, previewUrl = null) {
     console.log('PlayTrack called:', { trackUri, previewUrl, isPremium: this.isPremium });
     
-    // Premium users: Try Web Playback API first
+    // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
+        // First transfer any existing playback to web player
+        await this.transferPlaybackToWebPlayer();
+        
+        // Wait a moment for the transfer
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Now start the new track
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
           headers: {
@@ -35,15 +70,18 @@ class PlaybackService {
         });
 
         if (response.ok || response.status === 204) {
-          console.log('Premium: Full track playing');
+          console.log('Premium: Track started on web player');
           return;
+        } else {
+          const errorText = await response.text();
+          console.error('Playback failed:', response.status, errorText);
         }
       } catch (error) {
         console.log('Premium playback failed, falling back to preview');
       }
     }
 
-    // Non-Premium or fallback: Use preview
+    // Fallback for non-Premium or failed Premium
     if (previewUrl) {
       console.log('Playing preview:', previewUrl);
       this.playPreview(previewUrl);
@@ -54,9 +92,15 @@ class PlaybackService {
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
-    // Premium users: Try Web Playback API first
+    // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
+        // Transfer playback first
+        await this.transferPlaybackToWebPlayer();
+        
+        // Wait for transfer
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
           headers: {
@@ -70,7 +114,7 @@ class PlaybackService {
         });
 
         if (response.ok || response.status === 204) {
-          console.log('Premium: Playlist playing');
+          console.log('Premium: Playlist started on web player');
           return;
         }
       } catch (error) {
@@ -78,7 +122,7 @@ class PlaybackService {
       }
     }
 
-    // Non-Premium: Play first track preview
+    // Fallback for non-Premium
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
     } else {
@@ -86,32 +130,22 @@ class PlaybackService {
     }
   }
 
+  // Preview methods remain the same...
   playPreview(previewUrl) {
-    if (!previewUrl) {
-      console.log('No preview URL provided');
-      return;
-    }
-
-    console.log('Starting preview playback:', previewUrl);
+    if (!previewUrl) return;
     
-    // Stop current preview
     this.stopPreview();
-
-    // Set up new preview
     this.audioElement.src = previewUrl;
     this.audioElement.volume = 0.7;
     this.currentPreviewUrl = previewUrl;
     this.isPreviewMode = true;
 
-    // Play preview
     this.audioElement.play().then(() => {
       console.log('Preview playing successfully');
     }).catch(error => {
       console.error('Preview playback failed:', error);
-      alert('Failed to play preview. Please check your connection.');
     });
 
-    // Auto-stop after 30 seconds
     setTimeout(() => {
       if (this.currentPreviewUrl === previewUrl) {
         this.stopPreview();
@@ -125,33 +159,20 @@ class PlaybackService {
       this.audioElement.currentTime = 0;
       this.currentPreviewUrl = null;
       this.isPreviewMode = false;
-      console.log('Preview stopped');
     }
   }
 
   togglePreview() {
     if (!this.audioElement || !this.currentPreviewUrl) return;
-
     if (this.audioElement.paused) {
       this.audioElement.play();
-      console.log('Preview resumed');
     } else {
       this.audioElement.pause();
-      console.log('Preview paused');
     }
   }
 
   isPreviewPlaying() {
     return this.audioElement && !this.audioElement.paused && this.currentPreviewUrl;
-  }
-
-  getCurrentPreview() {
-    return {
-      isPlaying: this.isPreviewPlaying(),
-      url: this.currentPreviewUrl,
-      currentTime: this.audioElement?.currentTime || 0,
-      duration: this.audioElement?.duration || 30
-    };
   }
 }
 
