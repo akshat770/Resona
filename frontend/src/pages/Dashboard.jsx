@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import SpotifyPlayer from "../components/SpotifyPlayer";
@@ -9,6 +10,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [accessToken, setAccessToken] = useState(null);
   const [playerReady, setPlayerReady] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,6 +35,9 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
+
+        // Check if user has Premium
+        setIsPremium(profileRes.data.product === 'premium');
 
         // Fetch playlists
         const playlistsRes = await api.get("/spotify/user-playlists", {
@@ -60,22 +65,29 @@ export default function Dashboard() {
     console.log('Player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
     setPlayerReady(true);
+    setIsPremium(true); // If web player works, user has Premium
   };
 
   const playTrack = (track) => {
-    if (track && track.uri && playerReady) {
-      playbackService.playTrack(track.uri);
-    } else if (track && !playerReady) {
-      console.log('Player not ready yet, please wait...');
-    }
+    if (!track) return;
+    
+    playbackService.playTrack(
+      track.uri, 
+      track.preview_url
+    );
   };
 
   const playPlaylist = (playlist, trackIndex = 0) => {
-    if (playlist && playlist.uri && playerReady) {
-      playbackService.playPlaylist(playlist.uri, trackIndex);
-    } else if (playlist && !playerReady) {
-      console.log('Player not ready yet, please wait...');
-    }
+    if (!playlist) return;
+    
+    // Get first track's preview URL if available
+    const firstTrackPreview = playlist.tracks?.items?.[trackIndex]?.track?.preview_url;
+    
+    playbackService.playPlaylist(
+      playlist.uri, 
+      trackIndex, 
+      firstTrackPreview
+    );
   };
 
   if (!user) {
@@ -122,15 +134,6 @@ export default function Dashboard() {
             </svg>
             Liked Songs
           </a>
-          <a 
-            href="#" 
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-            </svg>
-            Playlists
-          </a>
         </nav>
         
         {/* User Info */}
@@ -147,7 +150,9 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-white">
                 {user.display_name || user.id || "User"}
               </p>
-              <p className="text-xs text-gray-400">Premium User</p>
+              <p className="text-xs text-gray-400">
+                {isPremium ? 'Premium User' : 'Free User (Preview Mode)'}
+              </p>
             </div>
           </div>
         </div>
@@ -161,15 +166,24 @@ export default function Dashboard() {
             <h2 className="text-3xl font-bold mb-2">
               Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user.display_name || user.id || "User"}
             </h2>
-            <p className="text-gray-400">Let's play some music</p>
+            <p className="text-gray-400">
+              {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
+            </p>
           </div>
           
           <div className="flex items-center gap-4">
             {/* Player Status Indicator */}
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${playerReady ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${
+                isPremium 
+                  ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+                  : 'bg-blue-400'
+              }`}></div>
               <span className="text-sm text-gray-400">
-                {playerReady ? 'Player Ready' : 'Connecting...'}
+                {isPremium 
+                  ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
+                  : 'Preview Mode'
+                }
               </span>
             </div>
             
@@ -181,12 +195,31 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Premium Upgrade Banner for Free Users */}
+        {!isPremium && (
+          <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 rounded-xl mb-8 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
+              <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
+            </div>
+            <button 
+              onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
+              className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Upgrade
+            </button>
+          </div>
+        )}
+
+        {/* Rest of your existing sections remain the same */}
         {/* Quick Actions */}
         <section className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
               <p className="font-semibold">Liked Songs</p>
-              <p className="text-sm opacity-80 mt-1">Your saved tracks</p>
+              <p className="text-sm opacity-80 mt-1">
+                {isPremium ? 'Your saved tracks' : 'Preview your saves'}
+              </p>
             </button>
             <button className="bg-gradient-to-br from-green-600 to-teal-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
               <p className="font-semibold">Recently Played</p>
@@ -226,6 +259,12 @@ export default function Dashboard() {
                       </svg>
                     </div>
                   </div>
+                  {/* Preview indicator for non-premium */}
+                  {!isPremium && r.track?.preview_url && (
+                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                      30s
+                    </div>
+                  )}
                 </div>
                 <div className="overflow-hidden flex-1">
                   <p className="font-semibold text-sm truncate text-white">
@@ -234,13 +273,16 @@ export default function Dashboard() {
                   <p className="text-gray-400 text-xs truncate">
                     {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
                   </p>
+                  {!isPremium && !r.track?.preview_url && (
+                    <p className="text-red-400 text-xs mt-1">No preview available</p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Playlists */}
+        {/* Playlists with preview indicators */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -266,6 +308,12 @@ export default function Dashboard() {
                       <path d="M8 5v14l11-7z"/>
                     </svg>
                   </button>
+                  {/* Preview mode indicator */}
+                  {!isPremium && (
+                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                      Preview
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold truncate text-white mb-1">{pl.name}</p>
@@ -278,7 +326,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Made for You */}
+        {/* Made for You section remains the same */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Made for You</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -302,8 +350,8 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* Spotify Web Player */}
-      {accessToken && (
+      {/* Spotify Web Player - only for Premium users */}
+      {accessToken && isPremium && (
         <SpotifyPlayer 
           accessToken={accessToken} 
           onPlayerReady={handlePlayerReady}
