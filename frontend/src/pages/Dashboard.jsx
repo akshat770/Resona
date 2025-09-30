@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import SpotifyPlayer from "../components/SpotifyPlayer";
 import playbackService from "../services/playbackService";
+import PreviewPlayer from "../components/PreviewPlayer";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
