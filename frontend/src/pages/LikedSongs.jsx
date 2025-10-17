@@ -54,11 +54,20 @@ export default function LikedSongs() {
     fetchLikedSongs();
   }, []);
 
-  const handlePlayerReady = (deviceId) => {
-    console.log('Player ready with device ID:', deviceId);
+  // UPDATED: Handle device activation properly
+  const handlePlayerReady = (deviceId, isActivated) => {
+    console.log('Player ready with device ID:', deviceId, 'activated:', isActivated);
+    playbackService.setAccessToken(accessToken);
     playbackService.setDeviceId(deviceId);
-    setPlayerReady(true);
-    setIsPremium(true);
+    
+    if (isActivated) {
+      console.log('Device ready for playback');
+      setPlayerReady(true);
+      setIsPremium(true);
+    } else {
+      console.warn('Device activation failed');
+      setPlayerReady(false);
+    }
   };
 
   const removeLikedSong = async (trackId) => {
@@ -77,8 +86,15 @@ export default function LikedSongs() {
     }
   };
 
+  // UPDATED: Gate playback until device is ready
   const playTrack = async (track) => {
     if (!track) return;
+    
+    // For Premium users, wait until device is ready
+    if (isPremium && !playerReady) {
+      console.warn("Player not ready yet. Please wait a moment...");
+      return;
+    }
     
     console.log('Playing track from liked songs:', {
       name: track.name,
@@ -137,7 +153,7 @@ export default function LikedSongs() {
       <div className="px-8 py-6 flex items-center gap-6">
         <button
           onClick={playAllLikedSongs}
-          disabled={songs.length === 0}
+          disabled={songs.length === 0 || (isPremium && !playerReady)}
           className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
         >
           <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -175,7 +191,7 @@ export default function LikedSongs() {
           }`}></div>
           <span className="text-sm text-gray-400">
             {isPremium 
-              ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
+              ? (playerReady ? 'Premium Player Ready' : 'Activating Player...')
               : 'Preview Mode'
             }
           </span>
@@ -233,7 +249,8 @@ export default function LikedSongs() {
                       </span>
                       <button
                         onClick={() => playTrack(item.track)}
-                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors"
+                        disabled={isPremium && !playerReady}
+                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors disabled:text-gray-600"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
@@ -307,12 +324,23 @@ export default function LikedSongs() {
         )}
       </div>
 
-      {/* Player Components */}
+      {/* UPDATED: Proper player rendering with device activation */}
       {accessToken && (
         isPremium ? (
-          <SpotifyPlayer 
-            accessToken={accessToken} 
-            onPlayerReady={handlePlayerReady}
+          <SpotifyPlayer
+            accessToken={accessToken}
+            onPlayerReady={(deviceId, isActivated) => {
+              playbackService.setAccessToken(accessToken);
+              playbackService.setDeviceId(deviceId);
+              
+              if (isActivated) {
+                console.log('Device ready for playback');
+                setPlayerReady(true);
+              } else {
+                console.warn('Device activation failed');
+                setPlayerReady(false);
+              }
+            }}
           />
         ) : (
           <PreviewPlayer />
