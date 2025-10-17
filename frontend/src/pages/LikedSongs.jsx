@@ -323,6 +323,17 @@ export default function LikedSongs() {
           </div>
         )}
       </div>
+
+      {accessToken && (
+              isPremium ? (
+                <SpotifyPlayer
+                  accessToken={accessToken}
+                  onPlayerReady={handlePlayerReady}
+                />
+              ) : (
+                <PreviewPlayer />
+              )
+            )}
     </div>
   );
 }
