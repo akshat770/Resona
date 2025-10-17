@@ -41,7 +41,7 @@ class PlaybackService {
 
         if (response.ok || response.status === 204) {
           console.log('SUCCESS: Full track playing for Premium user');
-          return; // Exit here - full track is playing
+          return; // EXIT HERE - full track is playing
         } else {
           console.log('Full track failed, falling back to preview');
         }
@@ -50,12 +50,13 @@ class PlaybackService {
       }
     }
 
-    // NON-PREMIUM OR FALLBACK: Play preview
-    console.log('Playing preview...');
+    // FALLBACK: Get and play preview
+    console.log('Getting preview for track...');
     
-    // If no preview URL provided, fetch it
+    // If no preview URL provided, fetch it from Spotify API
     if (!previewUrl) {
       const trackId = trackUri.split(':').pop();
+      console.log('Fetching preview for track ID:', trackId);
       
       try {
         const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
@@ -67,24 +68,28 @@ class PlaybackService {
         if (response.ok) {
           const trackData = await response.json();
           previewUrl = trackData.preview_url;
+          console.log('API returned preview URL:', previewUrl);
+        } else {
+          console.error('Failed to fetch track data:', response.status);
         }
       } catch (error) {
-        console.error('Failed to fetch track preview:', error);
+        console.error('API call failed:', error);
       }
     }
 
-    // Play preview
+    // Play preview if we got one
     if (previewUrl) {
+      console.log('Playing preview:', previewUrl);
       this.playPreview(previewUrl);
     } else {
-      console.log('No preview available for this track');
+      console.log('This track has no preview available anywhere');
     }
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
-    console.log('PlayPlaylist called:', { playlistUri, isPremium: this.isPremium });
+    console.log('PlayPlaylist called for Premium user');
     
-    // PREMIUM USERS: Try full playlist first
+    // PREMIUM: Try full playlist first
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
@@ -101,18 +106,16 @@ class PlaybackService {
 
         if (response.ok || response.status === 204) {
           console.log('SUCCESS: Full playlist playing for Premium user');
-          return; // Exit here - full playlist is playing
+          return; // EXIT HERE
         }
       } catch (error) {
-        console.log('Full playlist failed, falling back to preview');
+        console.log('Full playlist failed, trying preview');
       }
     }
 
-    // NON-PREMIUM OR FALLBACK: Play preview
+    // Fallback: Play preview
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
-    } else {
-      console.log('No preview available for playlist');
     }
   }
 
@@ -126,7 +129,7 @@ class PlaybackService {
     this.isPreviewMode = true;
 
     this.audioElement.play().then(() => {
-      console.log('Preview playing in web app');
+      console.log('Preview playing successfully');
     }).catch(error => {
       console.error('Preview failed:', error);
     });
