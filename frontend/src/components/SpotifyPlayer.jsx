@@ -1,3 +1,4 @@
+// frontend/src/components/SpotifyPlayer.jsx
 import { useState, useEffect, useRef } from 'react';
 
 export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
@@ -9,16 +10,39 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const playerRef = useRef(null);
+  const sdkLoadedRef = useRef(false);
 
   useEffect(() => {
     if (!accessToken) return;
 
-    const script = document.createElement('script');
-    script.src = 'https://sdk.scdn.co/spotify-player.js';
-    script.async = true;
-    document.body.appendChild(script);
+    // Prevent multiple SDK loads
+    if (sdkLoadedRef.current) return;
+    sdkLoadedRef.current = true;
+
+    // Check if SDK already exists
+    if (window.Spotify && window.Spotify.Player) {
+      initializePlayer();
+      return;
+    }
+
+    // Load SDK only if not already loaded
+    if (!document.querySelector('script[src="https://sdk.scdn.co/spotify-player.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://sdk.scdn.co/spotify-player.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
 
     window.onSpotifyWebPlaybackSDKReady = () => {
+      initializePlayer();
+    };
+
+    function initializePlayer() {
+      // Prevent multiple player instances
+      if (playerRef.current) {
+        playerRef.current.disconnect();
+      }
+
       const spotifyPlayer = new window.Spotify.Player({
         name: 'Resona Web Player',
         getOAuthToken: (cb) => { cb(accessToken); },
@@ -41,7 +65,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       });
 
       spotifyPlayer.addListener('playback_error', ({ message }) => {
-        // Only log unexpected errors, not "no list loaded"
         if (!message.includes('no list was loaded')) {
           console.error('Playback error:', message);
         }
@@ -80,13 +103,18 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         setIsReady(false);
       });
 
-      spotifyPlayer.connect();
-    };
+      spotifyPlayer.connect().then(success => {
+        if (success) {
+          console.log('Successfully connected to Spotify');
+        }
+      });
+    }
 
     return () => {
       if (playerRef.current) {
         playerRef.current.disconnect();
       }
+      sdkLoadedRef.current = false;
     };
   }, [accessToken, onPlayerReady]);
 
@@ -137,7 +165,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
   if (!isReady) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-400">
         <div className="flex items-center justify-center gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           <span>Connecting to Spotify...</span>
@@ -148,7 +176,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
   if (!currentTrack) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700">
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-400">
         <div className="flex items-center justify-center gap-2">
           <div className="w-2 h-2 bg-green-400 rounded-full"></div>
           <span>Premium Player Ready - Click on a song in the dashboard to start</span>
@@ -158,7 +186,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 border-t border-gray-700">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4">
       <div className="max-w-screen-xl mx-auto flex items-center justify-between">
         {/* Current Track Info */}
         <div className="flex items-center gap-4 flex-1 min-w-0">

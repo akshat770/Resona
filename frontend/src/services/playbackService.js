@@ -19,10 +19,29 @@ class PlaybackService {
     console.log('Access token set');
   }
 
-  // ADDED: Method to explicitly set Premium status
   setIsPremium(premium) {
     this.isPremium = premium;
     console.log('Premium status set to:', premium);
+  }
+
+  async getCurrentPlayer() {
+    if (!this.accessToken) return null;
+    
+    try {
+      const response = await fetch('https://api.spotify.com/v1/me/player', {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.log('Failed to get current player:', error);
+    }
+    return null;
   }
 
   async ensureWebPlayerActive() {
@@ -32,6 +51,13 @@ class PlaybackService {
       this.isTransferring = true;
       console.log('Ensuring web player is active...');
       
+      // Check current player first
+      const currentPlayer = await this.getCurrentPlayer();
+      if (currentPlayer && currentPlayer.device && currentPlayer.device.id === this.deviceId) {
+        console.log('Web player is already active');
+        return true;
+      }
+      
       const response = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
         headers: {
@@ -40,15 +66,16 @@ class PlaybackService {
         },
         body: JSON.stringify({
           device_ids: [this.deviceId],
-          play: false // Don't auto-play during transfer
+          play: false
         })
       });
 
       if (response.ok || response.status === 204) {
         console.log('Web player is now active');
-        // Wait for transfer to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         return true;
+      } else {
+        console.error('Failed to transfer playback:', response.status);
       }
     } catch (error) {
       console.log('Transfer failed:', error);
@@ -59,15 +86,22 @@ class PlaybackService {
   }
 
   async playTrack(trackUri, previewUrl = null) {
-    console.log('PlayTrack called:', { trackUri, previewUrl, isPremium: this.isPremium });
+    console.log('PlayTrack called:', { 
+      trackUri, 
+      previewUrl, 
+      isPremium: this.isPremium, 
+      deviceId: this.deviceId 
+    });
     
     // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
         // Ensure web player is active first
-        await this.ensureWebPlayerActive();
+        const transferred = await this.ensureWebPlayerActive();
+        if (!transferred) {
+          console.log('Failed to transfer to web player, trying direct play');
+        }
 
-        // Now start the new track immediately
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
           headers: {
@@ -85,9 +119,29 @@ class PlaybackService {
         } else {
           const errorText = await response.text();
           console.error('Playback failed:', response.status, errorText);
+          
+          // If 404, try without device_id parameter
+          if (response.status === 404) {
+            console.log('Trying playback without device_id...');
+            const fallbackResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.accessToken}`
+              },
+              body: JSON.stringify({
+                uris: [trackUri]
+              })
+            });
+            
+            if (fallbackResponse.ok || fallbackResponse.status === 204) {
+              console.log('Premium: Track started on active device');
+              return;
+            }
+          }
         }
       } catch (error) {
-        console.log('Premium playback failed, falling back to preview');
+        console.log('Premium playback failed, falling back to preview:', error);
       }
     }
 
@@ -97,7 +151,6 @@ class PlaybackService {
       this.playPreview(previewUrl);
     } else {
       console.log('No preview available');
-      // Only show alert for non-Premium users
       if (!this.isPremium) {
         alert('No preview available for this track. Please upgrade to Spotify Premium for full playback.');
       }
@@ -105,10 +158,16 @@ class PlaybackService {
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
+    console.log('PlayPlaylist called:', { 
+      playlistUri, 
+      trackOffset, 
+      isPremium: this.isPremium,
+      deviceId: this.deviceId
+    });
+    
     // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
-        // Ensure web player is active
         await this.ensureWebPlayerActive();
 
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
@@ -126,6 +185,24 @@ class PlaybackService {
         if (response.ok || response.status === 204) {
           console.log('Premium: Playlist started on web player');
           return;
+        } else {
+          // Try fallback without device_id
+          const fallbackResponse = await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.accessToken}`
+            },
+            body: JSON.stringify({
+              context_uri: playlistUri,
+              offset: { position: trackOffset }
+            })
+          });
+          
+          if (fallbackResponse.ok || fallbackResponse.status === 204) {
+            console.log('Premium: Playlist started on active device');
+            return;
+          }
         }
       } catch (error) {
         console.log('Premium playlist playback failed');
@@ -136,7 +213,6 @@ class PlaybackService {
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
     } else {
-      // Only show alert for non-Premium users
       if (!this.isPremium) {
         alert('No preview available for this playlist. Please upgrade to Spotify Premium.');
       }
