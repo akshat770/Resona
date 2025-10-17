@@ -20,7 +20,7 @@ class PlaybackService {
     this.isPremium = premium;
   }
 
-  async getTrackWithPreview(trackUri) {
+  async getTrackPreview(trackUri) {
     if (!this.accessToken) return null;
     
     const trackId = trackUri.split(':').pop();
@@ -44,47 +44,61 @@ class PlaybackService {
   async playTrack(trackUri, previewUrl = null) {
     console.log('PlayTrack called:', { trackUri, previewUrl, isPremium: this.isPremium });
     
-    // Premium users: Try web player first
-    if (this.isPremium && this.deviceId && this.accessToken) {
-      try {
-        const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.accessToken}`
-          },
-          body: JSON.stringify({
-            uris: [trackUri]
-          })
-        });
+    // If no preview provided, get it from API
+    if (!previewUrl) {
+      previewUrl = await this.getTrackPreview(trackUri);
+    }
 
-        if (response.ok || response.status === 204) {
-          console.log('Premium: Full track playing');
-          return;
-        }
-      } catch (error) {
-        console.log('Web player failed, trying preview');
+    // ALWAYS play preview in web app (this was working before)
+    if (previewUrl) {
+      console.log('Playing preview directly in web app');
+      this.playPreview(previewUrl);
+      
+      // Premium users: ALSO try to play full track in background (optional)
+      if (this.isPremium && this.deviceId) {
+        this.tryWebPlayerInBackground(trackUri);
+      }
+    } else {
+      // No preview available
+      console.log('No preview available for this track');
+      
+      // Premium users can still try web player
+      if (this.isPremium && this.deviceId) {
+        this.tryWebPlayerInBackground(trackUri);
       }
     }
+  }
 
-    // If no preview provided, fetch it from Spotify
-    if (!previewUrl) {
-      console.log('No preview provided, fetching from API...');
-      previewUrl = await this.getTrackWithPreview(trackUri);
-    }
+  async tryWebPlayerInBackground(trackUri) {
+    try {
+      const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`
+        },
+        body: JSON.stringify({
+          uris: [trackUri]
+        })
+      });
 
-    // Play preview if we got one
-    if (previewUrl) {
-      console.log('Playing preview in web app');
-      this.playPreview(previewUrl);
-    } else {
-      console.log('No preview available for this track');
+      if (response.ok || response.status === 204) {
+        console.log('Bonus: Full track also playing on Spotify Web Player');
+        // Don't stop the preview - let both play (user can choose)
+      }
+    } catch (error) {
+      // Silently fail - preview is still playing
     }
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
-    // Premium: Try web player
-    if (this.isPremium && this.deviceId && this.accessToken) {
+    // Always try to play preview first
+    if (firstTrackPreview) {
+      this.playPreview(firstTrackPreview);
+    }
+
+    // Premium users: Also try web player
+    if (this.isPremium && this.deviceId) {
       try {
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
@@ -99,19 +113,11 @@ class PlaybackService {
         });
 
         if (response.ok || response.status === 204) {
-          console.log('Premium: Playlist playing');
-          return;
+          console.log('Bonus: Full playlist also playing on Spotify');
         }
       } catch (error) {
-        console.log('Playlist failed, trying preview');
+        // Silently fail
       }
-    }
-
-    // Fallback: Play preview
-    if (firstTrackPreview) {
-      this.playPreview(firstTrackPreview);
-    } else {
-      console.log('No preview for playlist');
     }
   }
 
@@ -125,7 +131,7 @@ class PlaybackService {
     this.isPreviewMode = true;
 
     this.audioElement.play().then(() => {
-      console.log('Preview playing successfully');
+      console.log('Preview playing in web app');
     }).catch(error => {
       console.error('Preview failed:', error);
     });
