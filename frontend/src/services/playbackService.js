@@ -10,55 +10,134 @@ class PlaybackService {
 
   setDeviceId(deviceId) {
     this.deviceId = deviceId;
+    console.log('Device ID set:', deviceId);
   }
 
   setAccessToken(token) {
     this.accessToken = token;
+    console.log('Access token set');
   }
 
   setIsPremium(premium) {
     this.isPremium = premium;
+    console.log('Premium status set to:', premium);
   }
 
   async playTrack(trackUri, previewUrl = null) {
-    console.log('Playing track directly in web app');
+    console.log('PlayTrack called:', { 
+      trackUri, 
+      previewUrl, 
+      isPremium: this.isPremium,
+      deviceId: this.deviceId 
+    });
     
-    // ALWAYS try to get preview first (this was working before)
-    if (!previewUrl) {
-      const trackId = trackUri.split(':').pop();
-      previewUrl = await this.fetchPreview(trackId);
-    }
-
-    // Play preview in web app (this is what was working)
-    if (previewUrl) {
-      this.playPreview(previewUrl);
-      console.log('Track playing in web app');
-    } else {
-      console.log('No preview available');
-    }
-  }
-
-  async fetchPreview(trackId) {
-    try {
-      const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`
-        }
-      });
+    // For Premium users, try multiple approaches
+    if (this.isPremium && this.accessToken) {
       
-      if (response.ok) {
-        const trackData = await response.json();
-        return trackData.preview_url;
+      // Approach 1: Try with device ID
+      if (this.deviceId) {
+        try {
+          const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.accessToken}`
+            },
+            body: JSON.stringify({
+              uris: [trackUri]
+            })
+          });
+
+          if (response.ok || response.status === 204) {
+            console.log('Success: Track playing on web player');
+            return;
+          }
+        } catch (error) {
+          console.log('Web player approach failed');
+        }
       }
-    } catch (error) {
-      console.error('Failed to fetch preview:', error);
+
+      // Approach 2: Try without device ID (use active device)
+      try {
+        const response = await fetch('https://api.spotify.com/v1/me/player/play', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.accessToken}`
+          },
+          body: JSON.stringify({
+            uris: [trackUri]
+          })
+        });
+
+        if (response.ok || response.status === 204) {
+          console.log('Success: Track playing on active device');
+          return;
+        }
+      } catch (error) {
+        console.log('Active device approach failed');
+      }
+
+      // Approach 3: Open in Spotify app as fallback for Premium users
+      console.log('All playback methods failed, opening in Spotify app');
+      const trackId = trackUri.split(':').pop();
+      window.open(`https://open.spotify.com/track/${trackId}?utm_source=resona`, '_blank');
+      return;
     }
-    return null;
+
+    // Non-Premium: Use preview or open in Spotify
+    if (previewUrl) {
+      console.log('Playing preview for non-Premium user');
+      this.playPreview(previewUrl);
+    } else {
+      console.log('No preview, opening in Spotify');
+      const trackId = trackUri.split(':').pop();
+      window.open(`https://open.spotify.com/track/${trackId}?utm_source=resona`, '_blank');
+    }
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
+    console.log('PlayPlaylist called:', { playlistUri, trackOffset, isPremium: this.isPremium });
+    
+    // Premium users: Try web playback, fallback to Spotify app
+    if (this.isPremium && this.accessToken) {
+      
+      // Try with device ID first
+      if (this.deviceId) {
+        try {
+          const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.accessToken}`
+            },
+            body: JSON.stringify({
+              context_uri: playlistUri,
+              offset: { position: trackOffset }
+            })
+          });
+
+          if (response.ok || response.status === 204) {
+            console.log('Success: Playlist playing on web player');
+            return;
+          }
+        } catch (error) {
+          console.log('Web player playlist failed');
+        }
+      }
+
+      // Fallback: Open playlist in Spotify app
+      const playlistId = playlistUri.split(':').pop();
+      window.open(`https://open.spotify.com/playlist/${playlistId}?utm_source=resona`, '_blank');
+      return;
+    }
+
+    // Non-Premium: Preview or open in Spotify
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
+    } else {
+      const playlistId = playlistUri.split(':').pop();
+      window.open(`https://open.spotify.com/playlist/${playlistId}?utm_source=resona`, '_blank');
     }
   }
 
@@ -72,12 +151,11 @@ class PlaybackService {
     this.isPreviewMode = true;
 
     this.audioElement.play().then(() => {
-      console.log('Audio playing in web app successfully');
+      console.log('Preview playing successfully');
     }).catch(error => {
-      console.error('Audio failed:', error);
+      console.error('Preview playback failed:', error);
     });
 
-    // Auto-stop after 30 seconds
     setTimeout(() => {
       if (this.currentPreviewUrl === previewUrl) {
         this.stopPreview();
@@ -105,15 +183,6 @@ class PlaybackService {
 
   isPreviewPlaying() {
     return this.audioElement && !this.audioElement.paused && this.currentPreviewUrl;
-  }
-
-  getCurrentPreview() {
-    return {
-      isPlaying: this.isPreviewPlaying(),
-      url: this.currentPreviewUrl,
-      currentTime: this.audioElement?.currentTime || 0,
-      duration: this.audioElement?.duration || 30
-    };
   }
 }
 
