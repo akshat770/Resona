@@ -9,8 +9,10 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [isDeviceActive, setIsDeviceActive] = useState(false); // NEW: Track if device is active
   const playerRef = useRef(null);
   const sdkLoadedRef = useRef(false);
+  const deviceActivatedRef = useRef(false); // NEW: Prevent multiple activations
 
   useEffect(() => {
     if (!accessToken) return;
@@ -36,6 +38,40 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     window.onSpotifyWebPlaybackSDKReady = () => {
       initializePlayer();
     };
+
+    // NEW: Device activation function
+    async function activateDevice(deviceId, token) {
+      if (deviceActivatedRef.current) return true; // Prevent multiple activations
+      
+      try {
+        console.log('Activating device:', deviceId);
+        const response = await fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            device_ids: [deviceId],
+            play: false
+          })
+        });
+
+        if (response.ok || response.status === 204) {
+          console.log('Device activated successfully');
+          deviceActivatedRef.current = true;
+          setIsDeviceActive(true);
+          return true;
+        } else {
+          const errorText = await response.text();
+          console.error('Device activation failed:', response.status, errorText);
+          return false;
+        }
+      } catch (error) {
+        console.error('Device activation error:', error);
+        return false;
+      }
+    }
 
     function initializePlayer() {
       // Prevent multiple player instances
@@ -88,19 +124,26 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         setDuration(state.duration);
       });
 
-      // Ready
-      spotifyPlayer.addListener('ready', ({ device_id }) => {
+      // Ready - NEW: Automatically activate device
+      spotifyPlayer.addListener('ready', async ({ device_id }) => {
         console.log('Ready with Device ID', device_id);
         setDeviceId(device_id);
         setPlayer(spotifyPlayer);
         setIsReady(true);
-        onPlayerReady(device_id);
+        
+        // NEW: Activate the device immediately when ready
+        const activated = await activateDevice(device_id, accessToken);
+        
+        // Call the parent callback with activation status
+        onPlayerReady(device_id, activated);
       });
 
       // Not Ready
       spotifyPlayer.addListener('not_ready', ({ device_id }) => {
         console.log('Device ID has gone offline', device_id);
         setIsReady(false);
+        setIsDeviceActive(false);
+        deviceActivatedRef.current = false;
       });
 
       spotifyPlayer.connect().then(success => {
@@ -115,6 +158,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         playerRef.current.disconnect();
       }
       sdkLoadedRef.current = false;
+      deviceActivatedRef.current = false;
     };
   }, [accessToken, onPlayerReady]);
 
@@ -169,6 +213,18 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
         <div className="flex items-center justify-center gap-3">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           <span>Connecting to Spotify...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // NEW: Show device activation status
+  if (!isDeviceActive) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-400">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+          <span>Activating Premium Player...</span>
         </div>
       </div>
     );
