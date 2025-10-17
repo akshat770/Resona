@@ -8,9 +8,6 @@ export default function Login() {
 
   const backendURL = import.meta.env.VITE_BACKEND || "http://localhost:5000";
 
-  // -------------------
-  // Animated stars background
-  // -------------------
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

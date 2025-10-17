@@ -1,4 +1,3 @@
-// frontend/src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import SpotifyPlayer from "../components/SpotifyPlayer";
@@ -361,16 +360,7 @@ const playPlaylist = (playlist, trackIndex = 0) => {
         </section>
       </main>
       
-      {accessToken && (
-        isPremium ? (
-          <SpotifyPlayer
-            accessToken={accessToken}
-            onPlayerReady={handlePlayerReady}
-          />
-        ) : (
-          <PreviewPlayer />
-        )
-      )}
+
     </div>
   );
 }

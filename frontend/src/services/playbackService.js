@@ -1,4 +1,3 @@
-// frontend/src/services/playbackService.js
 class PlaybackService {
   constructor() {
     this.deviceId = null;

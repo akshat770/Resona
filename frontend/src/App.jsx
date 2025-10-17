@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import LikedSongs from "./pages/LikedSongs";
 import { PlayerProvider } from "./context/PlayerContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SpotifyPlayer from "./components/SpotifyPlayer";
+import PreviewPlayer from "./components/PreviewPlayer";
 
 export default function App() {
   return (
@@ -16,6 +18,16 @@ export default function App() {
           <Route path="/liked" element={<ProtectedRoute><LikedSongs /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
+      {accessToken && (
+              isPremium ? (
+                <SpotifyPlayer
+                  accessToken={accessToken}
+                  onPlayerReady={handlePlayerReady}
+                />
+              ) : (
+                <PreviewPlayer />
+              )
+            )}
     </PlayerProvider>
   );
 }
