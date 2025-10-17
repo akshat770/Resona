@@ -10,7 +10,6 @@ class PlaybackService {
 
   setDeviceId(deviceId) {
     this.deviceId = deviceId;
-    console.log('Device ID set:', deviceId);
   }
 
   setAccessToken(token) {
@@ -19,7 +18,27 @@ class PlaybackService {
 
   setIsPremium(premium) {
     this.isPremium = premium;
-    console.log('Premium status set to:', premium);
+  }
+
+  async getTrackWithPreview(trackUri) {
+    if (!this.accessToken) return null;
+    
+    const trackId = trackUri.split(':').pop();
+    try {
+      const response = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const trackData = await response.json();
+        return trackData.preview_url;
+      }
+    } catch (error) {
+      console.error('Failed to fetch track preview:', error);
+    }
+    return null;
   }
 
   async playTrack(trackUri, previewUrl = null) {
@@ -40,29 +59,31 @@ class PlaybackService {
         });
 
         if (response.ok || response.status === 204) {
-          console.log('Premium: Full track playing on web player');
+          console.log('Premium: Full track playing');
           return;
-        } else {
-          console.log('Web player failed, trying preview');
         }
       } catch (error) {
-        console.log('Premium playback failed, trying preview');
+        console.log('Web player failed, trying preview');
       }
     }
 
-    // Fallback: Use preview (for both Premium and Free users)
+    // If no preview provided, fetch it from Spotify
+    if (!previewUrl) {
+      console.log('No preview provided, fetching from API...');
+      previewUrl = await this.getTrackWithPreview(trackUri);
+    }
+
+    // Play preview if we got one
     if (previewUrl) {
-      console.log('Playing 30-second preview');
+      console.log('Playing preview in web app');
       this.playPreview(previewUrl);
     } else {
-      console.log('No preview available - this song cannot be played');
-      // Just show a visual indicator but don't redirect anywhere
-      this.showNoPreviewNotification();
+      console.log('No preview available for this track');
     }
   }
 
   async playPlaylist(playlistUri, trackOffset = 0, firstTrackPreview = null) {
-    // Premium users: Try web player
+    // Premium: Try web player
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
@@ -78,28 +99,26 @@ class PlaybackService {
         });
 
         if (response.ok || response.status === 204) {
-          console.log('Premium: Playlist playing on web player');
+          console.log('Premium: Playlist playing');
           return;
         }
       } catch (error) {
-        console.log('Playlist playback failed');
+        console.log('Playlist failed, trying preview');
       }
     }
 
-    // Fallback: Play preview of first track
+    // Fallback: Play preview
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
     } else {
-      this.showNoPreviewNotification();
+      console.log('No preview for playlist');
     }
   }
 
   playPreview(previewUrl) {
     if (!previewUrl) return;
     
-    // Stop any currently playing preview
     this.stopPreview();
-    
     this.audioElement.src = previewUrl;
     this.audioElement.volume = 0.7;
     this.currentPreviewUrl = previewUrl;
@@ -108,20 +127,14 @@ class PlaybackService {
     this.audioElement.play().then(() => {
       console.log('Preview playing successfully');
     }).catch(error => {
-      console.error('Preview playback failed:', error);
+      console.error('Preview failed:', error);
     });
 
-    // Auto-stop after 30 seconds
     setTimeout(() => {
       if (this.currentPreviewUrl === previewUrl) {
         this.stopPreview();
       }
     }, 30000);
-  }
-
-  showNoPreviewNotification() {
-    // Simple console log instead of alert
-    console.log('No preview available for this track');
   }
 
   stopPreview() {
