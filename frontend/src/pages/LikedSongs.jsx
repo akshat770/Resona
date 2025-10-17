@@ -323,29 +323,6 @@ export default function LikedSongs() {
           </div>
         )}
       </div>
-
-      {/* UPDATED: Proper player rendering with device activation */}
-      {accessToken && (
-        isPremium ? (
-          <SpotifyPlayer
-            accessToken={accessToken}
-            onPlayerReady={(deviceId, isActivated) => {
-              playbackService.setAccessToken(accessToken);
-              playbackService.setDeviceId(deviceId);
-              
-              if (isActivated) {
-                console.log('Device ready for playback');
-                setPlayerReady(true);
-              } else {
-                console.warn('Device activation failed');
-                setPlayerReady(false);
-              }
-            }}
-          />
-        ) : (
-          <PreviewPlayer />
-        )
-      )}
     </div>
   );
 }
