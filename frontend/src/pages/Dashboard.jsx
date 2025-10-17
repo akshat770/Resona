@@ -360,7 +360,16 @@ const playPlaylist = (playlist, trackIndex = 0) => {
         </section>
       </main>
       
-
+      {accessToken && (
+        isPremium ? (
+          <SpotifyPlayer
+            accessToken={accessToken}
+            onPlayerReady={handlePlayerReady}
+          />
+        ) : (
+          <PreviewPlayer />
+        )
+      )}
     </div>
   );
 }
