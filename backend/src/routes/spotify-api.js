@@ -15,7 +15,6 @@ const verifySpotifyToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Create Spotify API instance with user's tokens
     const spotifyApi = new SpotifyWebApi({
       clientId: process.env.SPOTIFY_CLIENT_ID,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
@@ -48,7 +47,7 @@ router.get('/profile', verifySpotifyToken, async (req, res) => {
 // Get user's playlists
 router.get('/user-playlists', verifySpotifyToken, async (req, res) => {
   try {
-    const data = await req.spotifyApi.getUserPlaylists(req.user.id, { limit: 20 });
+    const data = await req.spotifyApi.getUserPlaylists(req.user.id, { limit: 50 });
     res.json(data.body);
   } catch (error) {
     console.error('Error fetching playlists:', error);
@@ -56,10 +55,60 @@ router.get('/user-playlists', verifySpotifyToken, async (req, res) => {
   }
 });
 
+// Get playlist tracks
+router.get('/playlist/:id/tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const data = await req.spotifyApi.getPlaylistTracks(req.params.id, { limit: 100 });
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error fetching playlist tracks:', error);
+    res.status(500).json({ error: 'Failed to fetch playlist tracks' });
+  }
+});
+
+// Create playlist
+router.post('/create-playlist', verifySpotifyToken, async (req, res) => {
+  try {
+    const { name, description, isPublic } = req.body;
+    const data = await req.spotifyApi.createPlaylist(name, {
+      description: description || `Created with Resona`,
+      public: isPublic || false
+    });
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error creating playlist:', error);
+    res.status(500).json({ error: 'Failed to create playlist' });
+  }
+});
+
+// Add tracks to playlist
+router.post('/playlist/:id/tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const { tracks } = req.body; // Array of track URIs
+    const data = await req.spotifyApi.addTracksToPlaylist(req.params.id, tracks);
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error adding tracks to playlist:', error);
+    res.status(500).json({ error: 'Failed to add tracks to playlist' });
+  }
+});
+
+// Remove tracks from playlist
+router.delete('/playlist/:id/tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const { tracks } = req.body; // Array of track URIs
+    const data = await req.spotifyApi.removeTracksFromPlaylist(req.params.id, tracks);
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error removing tracks from playlist:', error);
+    res.status(500).json({ error: 'Failed to remove tracks from playlist' });
+  }
+});
+
 // Get recently played tracks
 router.get('/recent-tracks', verifySpotifyToken, async (req, res) => {
   try {
-    const data = await req.spotifyApi.getMyRecentlyPlayedTracks({ limit: 20 });
+    const data = await req.spotifyApi.getMyRecentlyPlayedTracks({ limit: 50 });
     res.json(data.body);
   } catch (error) {
     console.error('Error fetching recent tracks:', error);
@@ -70,11 +119,64 @@ router.get('/recent-tracks', verifySpotifyToken, async (req, res) => {
 // Get liked songs
 router.get('/liked-songs', verifySpotifyToken, async (req, res) => {
   try {
-    const data = await req.spotifyApi.getMySavedTracks({ limit: 50 });
+    const limit = req.query.limit || 50;
+    const offset = req.query.offset || 0;
+    const data = await req.spotifyApi.getMySavedTracks({ 
+      limit: parseInt(limit),
+      offset: parseInt(offset) 
+    });
     res.json(data.body);
   } catch (error) {
     console.error('Error fetching liked songs:', error);
     res.status(500).json({ error: 'Failed to fetch liked songs' });
+  }
+});
+
+// Add track to liked songs
+router.put('/liked-songs', verifySpotifyToken, async (req, res) => {
+  try {
+    const { trackIds } = req.body; // Array of track IDs
+    await req.spotifyApi.addToMySavedTracks(trackIds);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error adding to liked songs:', error);
+    res.status(500).json({ error: 'Failed to add to liked songs' });
+  }
+});
+
+// Remove track from liked songs
+router.delete('/liked-songs', verifySpotifyToken, async (req, res) => {
+  try {
+    const { trackIds } = req.body; // Array of track IDs
+    await req.spotifyApi.removeFromMySavedTracks(trackIds);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error removing from liked songs:', error);
+    res.status(500).json({ error: 'Failed to remove from liked songs' });
+  }
+});
+
+// Check if tracks are liked
+router.get('/check-liked/:trackIds', verifySpotifyToken, async (req, res) => {
+  try {
+    const trackIds = req.params.trackIds.split(',');
+    const data = await req.spotifyApi.containsMySavedTracks(trackIds);
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error checking liked status:', error);
+    res.status(500).json({ error: 'Failed to check liked status' });
+  }
+});
+
+// Search tracks
+router.get('/search', verifySpotifyToken, async (req, res) => {
+  try {
+    const { q, type = 'track', limit = 20 } = req.query;
+    const data = await req.spotifyApi.search(q, [type], { limit: parseInt(limit) });
+    res.json(data.body);
+  } catch (error) {
+    console.error('Error searching:', error);
+    res.status(500).json({ error: 'Failed to search' });
   }
 });
 

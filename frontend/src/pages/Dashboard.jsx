@@ -1,9 +1,10 @@
-// frontend/src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
 import SpotifyPlayer from "../components/SpotifyPlayer";
 import playbackService from "../services/playbackService";
 import PreviewPlayer from "../components/PreviewPlayer";
+import PlaylistManager from "../components/PlaylistManager";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -12,6 +13,8 @@ export default function Dashboard() {
   const [accessToken, setAccessToken] = useState(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [showPlaylistManager, setShowPlaylistManager] = useState(false);
+  const [likedSongsCount, setLikedSongsCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -19,38 +22,37 @@ export default function Dashboard() {
       if (!token) return window.location.href = "/";
 
       try {
-        // Decode JWT to extract access token
         const payload = JSON.parse(atob(token.split('.')[1]));
         const spotifyAccessToken = payload.accessToken;
-        
+
         setAccessToken(spotifyAccessToken);
         playbackService.setAccessToken(spotifyAccessToken);
 
-        // Verify session
         await api.get("/auth/verify", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Fetch user profile
         const profileRes = await api.get("/spotify/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
-
-        // Check if user has Premium
         setIsPremium(profileRes.data.product === 'premium');
 
-        // Fetch playlists
         const playlistsRes = await api.get("/spotify/user-playlists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setPlaylists(playlistsRes.data.items || []);
 
-        // Fetch recent tracks
         const recentRes = await api.get("/spotify/recent-tracks", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setRecent(recentRes.data.items || []);
+
+        // Fetch liked songs count for quick actions
+        const likedRes = await api.get("/spotify/liked-songs?limit=1", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLikedSongsCount(likedRes.data.total || 0);
 
       } catch (err) {
         console.error("Error fetching Spotify data:", err);
@@ -66,51 +68,33 @@ export default function Dashboard() {
     console.log('Player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
     setPlayerReady(true);
-    setIsPremium(true); // If web player works, user has Premium
+    setIsPremium(true);
   };
 
   const playTrack = (track) => {
-  if (!track) return;
-  
-  console.log('Playing track:', {
-    name: track.name,
-    uri: track.uri,
-    preview_url: track.preview_url,
-    isPremium
-  });
-  
-  playbackService.playTrack(track.uri, track.preview_url);
-};
+    if (!track) return;
+    playbackService.playTrack(track.uri, track.preview_url);
+  };
 
-const playPlaylist = (playlist, trackIndex = 0) => {
-  if (!playlist) return;
-  
-  // Get first track's preview URL
-  let firstTrackPreview = null;
-  if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
-    firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
-  }
-  
-  console.log('Playing playlist:', {
-    name: playlist.name,
-    uri: playlist.uri,
-    preview_url: firstTrackPreview,
-    isPremium
-  });
-  
-  playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
-};
+  const playPlaylist = async (playlist, trackIndex = 0) => {
+    if (!playlist) return;
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen text-white bg-gray-900">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading your music...</p>
-        </div>
-      </div>
-    );
-  }
+    // Fetch the playlist tracks to get the preview for non-premium
+    const token = localStorage.getItem("jwt");
+    let firstTrackPreview = null;
+    try {
+      const response = await api.get(`/spotify/playlist/${playlist.id}/tracks`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.items?.[trackIndex]?.track?.preview_url) {
+        firstTrackPreview = response.data.items[trackIndex].track.preview_url;
+      }
+    } catch (error) {
+      console.error("Failed to load playlist tracks for preview");
+    }
+
+    playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white pb-24">
@@ -136,21 +120,21 @@ const playPlaylist = (playlist, trackIndex = 0) => {
             </svg>
             Search
           </a>
-          <a 
-            href="/liked" 
+          <Link
+            to="/liked"
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
             Liked Songs
-          </a>
+          </Link>
         </nav>
-        
+
         {/* User Info */}
         <div className="mt-auto pt-6 border-t border-gray-700">
           <div className="flex items-center gap-3">
-            {user.images?.[0]?.url && (
+            {user?.images?.[0]?.url && (
               <img 
                 src={user.images[0].url} 
                 alt="Profile" 
@@ -159,7 +143,7 @@ const playPlaylist = (playlist, trackIndex = 0) => {
             )}
             <div>
               <p className="text-sm font-medium text-white">
-                {user.display_name || user.id || "User"}
+                {user?.display_name || user?.id || "User"}
               </p>
               <p className="text-xs text-gray-400">
                 {isPremium ? 'Premium User' : 'Free User (Preview Mode)'}
@@ -175,13 +159,12 @@ const playPlaylist = (playlist, trackIndex = 0) => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold mb-2">
-              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user.display_name || user.id || "User"}
+              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.display_name || user?.id || "User"}
             </h2>
             <p className="text-gray-400">
               {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
             </p>
           </div>
-          
           <div className="flex items-center gap-4">
             {/* Player Status Indicator */}
             <div className="flex items-center gap-2">
@@ -197,7 +180,6 @@ const playPlaylist = (playlist, trackIndex = 0) => {
                 }
               </span>
             </div>
-            
             <input
               type="text"
               placeholder="Search songs, artists..."
@@ -206,35 +188,26 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         </div>
 
-        {/* Premium Upgrade Banner for Free Users */}
-        {!isPremium && (
-          <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 rounded-xl mb-8 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
-              <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
-            </div>
-            <button 
-              onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
-              className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Upgrade
-            </button>
-          </div>
-        )}
-
-        {/* Rest of your existing sections remain the same */}
         {/* Quick Actions */}
         <section className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
+            <Link
+              to="/liked"
+              className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform"
+            >
               <p className="font-semibold">Liked Songs</p>
               <p className="text-sm opacity-80 mt-1">
-                {isPremium ? 'Your saved tracks' : 'Preview your saves'}
+                {isPremium
+                  ? `${likedSongsCount} saved tracks`
+                  : 'Preview your saves'}
               </p>
-            </button>
-            <button className="bg-gradient-to-br from-green-600 to-teal-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
-              <p className="font-semibold">Recently Played</p>
-              <p className="text-sm opacity-80 mt-1">Jump back in</p>
+            </Link>
+            <button 
+              className="bg-gradient-to-br from-green-600 to-teal-600 p-4 rounded-xl text-left hover:scale-105 transition-transform"
+              onClick={() => setShowPlaylistManager(true)}
+            >
+              <p className="font-semibold">Create Playlist</p>
+              <p className="text-sm opacity-80 mt-1">Make your own mix</p>
             </button>
             <button className="bg-gradient-to-br from-orange-600 to-red-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
               <p className="font-semibold">Discover</p>
@@ -270,7 +243,6 @@ const playPlaylist = (playlist, trackIndex = 0) => {
                       </svg>
                     </div>
                   </div>
-                  {/* Preview indicator for non-premium */}
                   {!isPremium && r.track?.preview_url && (
                     <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
                       30s
@@ -293,7 +265,7 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         </section>
 
-        {/* Playlists with preview indicators */}
+        {/* Playlists */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -309,9 +281,9 @@ const playPlaylist = (playlist, trackIndex = 0) => {
                     className="rounded-lg w-full aspect-square object-cover"
                   />
                   <button
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      playPlaylist(pl);
+                      await playPlaylist(pl);
                     }}
                     className="absolute bottom-2 right-2 bg-green-500 hover:bg-green-400 text-black rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-lg transform translate-y-2 group-hover:translate-y-0"
                   >
@@ -337,7 +309,7 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         </section>
 
-        {/* Made for You section remains the same */}
+        {/* Made for You */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Made for You</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -359,8 +331,18 @@ const playPlaylist = (playlist, trackIndex = 0) => {
             </div>
           </div>
         </section>
+
+        <PlaylistManager 
+          isOpen={showPlaylistManager}
+          onClose={() => setShowPlaylistManager(false)}
+          onPlaylistCreated={(newPlaylist) => {
+            setPlaylists([newPlaylist, ...playlists]);
+            alert(`Playlist "${newPlaylist.name}" created successfully!`);
+          }}
+        />
       </main>
-      
+
+      {/* Player */}
       {accessToken && (
         isPremium ? (
           <SpotifyPlayer

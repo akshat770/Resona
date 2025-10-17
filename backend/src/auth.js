@@ -4,6 +4,7 @@ router.get("/spotify", (req, res) => {
     "user-read-private", 
     "user-read-recently-played",
     "user-library-read",
+    "user-library-modify",
     "playlist-read-private",
     "playlist-modify-private",
     "playlist-modify-public",
