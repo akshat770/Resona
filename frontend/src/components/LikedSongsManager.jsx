@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../api/axios';
 
-export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
+export default function LikedSongsManager({ songs, setSongs, onSongSelect, playlists = [] }) {
   const [selectedSongs, setSelectedSongs] = useState(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
   const [sortBy, setSortBy] = useState('added_at');
@@ -56,7 +56,7 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
       .map(item => item.track.uri);
 
     try {
-      await api.post(`/spotify/add-to-playlist/${playlistId}`, {
+      await api.post(`/spotify/playlist/${playlistId}/tracks`, {
         uris: trackUris
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -107,6 +107,19 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
       return 0;
     });
 
+  // ADDED: Return object with selection methods for parent to use
+  const selectionMethods = {
+    isSelecting,
+    selectedSongs,
+    filteredSongs,
+    toggleSongSelection
+  };
+
+  // ADDED: Expose selection methods to parent component
+  if (onSongSelect && typeof onSongSelect === 'function') {
+    onSongSelect(selectionMethods);
+  }
+
   return (
     <div className="space-y-4">
       {/* Management Controls */}
@@ -114,7 +127,10 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setIsSelecting(!isSelecting)}
+              onClick={() => {
+                setIsSelecting(!isSelecting);
+                if (isSelecting) setSelectedSongs(new Set());
+              }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 isSelecting 
                   ? 'bg-blue-500 hover:bg-blue-400 text-white'
@@ -187,18 +203,24 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
               Remove {selectedSongs.size} Song{selectedSongs.size !== 1 ? 's' : ''}
             </button>
             
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  addToPlaylist(e.target.value);
-                  e.target.value = '';
-                }
-              }}
-              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="">Add to Playlist...</option>
-              {/* You'll need to pass playlists as prop */}
-            </select>
+            {playlists.length > 0 && (
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addToPlaylist(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+              >
+                <option value="">Add to Playlist...</option>
+                {playlists.map(playlist => (
+                  <option key={playlist.id} value={playlist.id}>
+                    {playlist.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
       </div>
@@ -209,10 +231,12 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect }) {
         {searchQuery && ` matching "${searchQuery}"`}
       </div>
 
-      {/* Return filtered songs for rendering */}
-      <div className="hidden">
-        {/* This component manages the songs list, parent component handles rendering */}
-      </div>
+      {/* ADDED: Selection info for parent component */}
+      {isSelecting && (
+        <div className="text-sm text-gray-400">
+          Click on songs in the list below to select them
+        </div>
+      )}
     </div>
   );
 }
