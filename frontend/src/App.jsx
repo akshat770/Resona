@@ -45,11 +45,11 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard 
+                <Dashboard
                   playerReady={playerReady}
                   isPremium={isPremium}
                   setAccessToken={setAccessToken}
@@ -57,18 +57,21 @@ export default function App() {
                   setIsAuthenticated={setIsAuthenticated}
                 />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/liked" 
+          <Route
+            path="/liked"
             element={
               <ProtectedRoute>
-                <LikedSongs 
+                <LikedSongs
                   playerReady={playerReady}
                   isPremium={isPremium}
+                  setIsPremium={setIsPremium}
+                  setAccessToken={setAccessToken}
+                  setIsAuthenticated={setIsAuthenticated}
                 />
               </ProtectedRoute>
-            } 
+            }
           />
         </Routes>
 

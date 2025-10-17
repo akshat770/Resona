@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
 
-export default function LikedSongs({ playerReady, isPremium }) {
+export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAccessToken, setIsAuthenticated }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,7 +23,17 @@ export default function LikedSongs({ playerReady, isPremium }) {
         // Set up access token for playback
         const payload = JSON.parse(atob(token.split('.')[1]));
         const spotifyAccessToken = payload.accessToken;
+        
+        // ADDED: Update App.jsx state so it knows we have token and premium status
+        setAccessToken(spotifyAccessToken);
+        setIsAuthenticated(true);
         playbackService.setAccessToken(spotifyAccessToken);
+
+        // ADDED: Check user profile for Premium status and update App.jsx
+        const profileRes = await api.get("/spotify/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsPremium(profileRes.data.product === 'premium');
 
         // Fetch liked songs
         const response = await api.get("/spotify/liked-songs", {
@@ -40,7 +50,7 @@ export default function LikedSongs({ playerReady, isPremium }) {
     };
 
     fetchLikedSongs();
-  }, []);
+  }, [setAccessToken, setIsPremium, setIsAuthenticated]);
 
   const removeLikedSong = async (trackId) => {
     const token = localStorage.getItem("jwt");

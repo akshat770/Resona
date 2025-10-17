@@ -9,7 +9,9 @@ export default function PreviewPlayer() {
     const interval = setInterval(() => {
       const preview = playbackService.getCurrentPreview();
       setPreviewState(preview);
-      setCurrentTime(preview.currentTime);
+      if (preview && preview.url) {
+        setCurrentTime(preview.currentTime);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -24,15 +26,9 @@ export default function PreviewPlayer() {
     setPreviewState(null);
   };
 
+  // UPDATED: Only show player when there's actually a preview URL
   if (!previewState?.url) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-400">
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-          <span>Click on a song to play 30-second preview</span>
-        </div>
-      </div>
-    );
+    return null; // Don't render anything when no preview is active
   }
 
   const formatTime = (seconds) => {
