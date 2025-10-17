@@ -17,8 +17,7 @@ export default function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/liked" element={<ProtectedRoute><LikedSongs /></ProtectedRoute>} />
         </Routes>
-      </BrowserRouter>
-      {accessToken && (
+        {accessToken && (
               isPremium ? (
                 <SpotifyPlayer
                   accessToken={accessToken}
@@ -28,6 +27,8 @@ export default function App() {
                 <PreviewPlayer />
               )
             )}
+      </BrowserRouter>
+      
     </PlayerProvider>
   );
 }
