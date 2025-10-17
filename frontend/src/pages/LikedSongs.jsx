@@ -2,12 +2,17 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
+import SpotifyPlayer from "../components/SpotifyPlayer";
+import PreviewPlayer from "../components/PreviewPlayer";
 
 export default function LikedSongs() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [accessToken, setAccessToken] = useState(null);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
 
   useEffect(() => {
     const fetchLikedSongs = async () => {
@@ -19,14 +24,25 @@ export default function LikedSongs() {
 
       try {
         setLoading(true);
+        
+        // Set up access token for playback
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const spotifyAccessToken = payload.accessToken;
+        setAccessToken(spotifyAccessToken);
+        playbackService.setAccessToken(spotifyAccessToken);
+
+        // Check user profile for Premium status
+        const profileRes = await api.get("/spotify/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsPremium(profileRes.data.product === 'premium');
+
+        // Fetch liked songs
         const response = await api.get("/spotify/liked-songs", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSongs(response.data.items || []);
         
-        // Check if user is premium
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setIsPremium(!!payload.accessToken);
       } catch (err) {
         console.error("Error fetching liked songs:", err);
         setError("Failed to load liked songs");
@@ -37,6 +53,13 @@ export default function LikedSongs() {
 
     fetchLikedSongs();
   }, []);
+
+  const handlePlayerReady = (deviceId) => {
+    console.log('Player ready with device ID:', deviceId);
+    playbackService.setDeviceId(deviceId);
+    setPlayerReady(true);
+    setIsPremium(true);
+  };
 
   const removeLikedSong = async (trackId) => {
     const token = localStorage.getItem("jwt");
@@ -54,15 +77,27 @@ export default function LikedSongs() {
     }
   };
 
-  const playTrack = (track) => {
-    playbackService.playTrack(track.uri, track.preview_url);
+  const playTrack = async (track) => {
+    if (!track) return;
+    
+    console.log('Playing track from liked songs:', {
+      name: track.name,
+      uri: track.uri,
+      preview_url: track.preview_url,
+      isPremium
+    });
+    
+    // Set currently playing immediately for UI feedback
+    setCurrentlyPlaying(track);
+    
+    // Play the track
+    await playbackService.playTrack(track.uri, track.preview_url);
   };
 
-  const playAllLikedSongs = () => {
-    if (songs.length > 0 && isPremium) {
-      // Create temporary playlist URI for all liked songs
-      const trackUris = songs.map(item => item.track.uri);
-      playbackService.playTrack(trackUris[0], songs[0].track.preview_url);
+  const playAllLikedSongs = async () => {
+    if (songs.length > 0) {
+      // Play first song
+      await playTrack(songs[0].track);
     }
   };
 
@@ -78,7 +113,7 @@ export default function LikedSongs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white pb-24">
       {/* Header */}
       <div className="bg-gradient-to-b from-green-600 to-gray-900 p-8">
         <div className="flex items-center gap-6">
@@ -91,6 +126,9 @@ export default function LikedSongs() {
             <p className="text-sm font-medium text-green-200">Playlist</p>
             <h1 className="text-6xl font-bold mb-4">Liked Songs</h1>
             <p className="text-gray-300">{songs.length} songs</p>
+            <p className="text-gray-400 text-sm mt-2">
+              {isPremium ? 'Full playback available' : '30-second previews'}
+            </p>
           </div>
         </div>
       </div>
@@ -99,7 +137,8 @@ export default function LikedSongs() {
       <div className="px-8 py-6 flex items-center gap-6">
         <button
           onClick={playAllLikedSongs}
-          className="bg-green-500 hover:bg-green-400 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg"
+          disabled={songs.length === 0}
+          className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
         >
           <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z"/>
@@ -108,10 +147,39 @@ export default function LikedSongs() {
         
         <Link 
           to="/dashboard"
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
         >
-          ← Back to Dashboard
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+          </svg>
+          Back to Dashboard
         </Link>
+
+        {/* Currently Playing Info */}
+        {currentlyPlaying && (
+          <div className="flex items-center gap-3 ml-4 px-4 py-2 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <div className="text-sm">
+              <p className="text-white font-medium">Now Playing</p>
+              <p className="text-gray-400 truncate max-w-64">{currentlyPlaying.name}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Player Status */}
+        <div className="flex items-center gap-2 ml-auto">
+          <div className={`w-2 h-2 rounded-full ${
+            isPremium 
+              ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+              : 'bg-blue-400'
+          }`}></div>
+          <span className="text-sm text-gray-400">
+            {isPremium 
+              ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
+              : 'Preview Mode'
+            }
+          </span>
+        </div>
       </div>
 
       {/* Songs List */}
@@ -145,20 +213,34 @@ export default function LikedSongs() {
             {songs.map((item, index) => (
               <div
                 key={item.track.id}
-                className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors"
+                className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors ${
+                  currentlyPlaying?.id === item.track.id ? 'bg-gray-800 border-l-4 border-green-400' : ''
+                }`}
               >
                 <div className="col-span-1 flex items-center">
-                  <span className="text-gray-400 group-hover:hidden text-sm">
-                    {index + 1}
-                  </span>
-                  <button
-                    onClick={() => playTrack(item.track)}
-                    className="hidden group-hover:block text-white hover:text-green-400"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </button>
+                  {currentlyPlaying?.id === item.track.id ? (
+                    <div className="w-4 h-4 flex items-center justify-center">
+                      <div className="flex gap-0.5">
+                        <div className="w-0.5 h-4 bg-green-400 animate-pulse"></div>
+                        <div className="w-0.5 h-2 bg-green-400 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-0.5 h-3 bg-green-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-gray-400 group-hover:hidden text-sm">
+                        {index + 1}
+                      </span>
+                      <button
+                        onClick={() => playTrack(item.track)}
+                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 <div className="col-span-5 flex items-center gap-3">
@@ -168,7 +250,9 @@ export default function LikedSongs() {
                     className="w-10 h-10 rounded"
                   />
                   <div className="min-w-0">
-                    <p className="font-medium text-white truncate">
+                    <p className={`font-medium truncate ${
+                      currentlyPlaying?.id === item.track.id ? 'text-green-400' : 'text-white'
+                    }`}>
                       {item.track.name}
                     </p>
                     <p className="text-sm text-gray-400 truncate">
@@ -177,7 +261,12 @@ export default function LikedSongs() {
                   </div>
                   {!isPremium && item.track.preview_url && (
                     <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                      Preview
+                      30s
+                    </span>
+                  )}
+                  {!isPremium && !item.track.preview_url && (
+                    <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">
+                      No Preview
                     </span>
                   )}
                 </div>
@@ -217,6 +306,18 @@ export default function LikedSongs() {
           </div>
         )}
       </div>
+
+      {/* Player Components */}
+      {accessToken && (
+        isPremium ? (
+          <SpotifyPlayer 
+            accessToken={accessToken} 
+            onPlayerReady={handlePlayerReady}
+          />
+        ) : (
+          <PreviewPlayer />
+        )
+      )}
     </div>
   );
 }

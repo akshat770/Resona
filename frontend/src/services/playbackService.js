@@ -1,4 +1,3 @@
-// frontend/src/services/playbackService.js
 class PlaybackService {
   constructor() {
     this.deviceId = null;
@@ -7,6 +6,7 @@ class PlaybackService {
     this.audioElement = new Audio();
     this.currentPreviewUrl = null;
     this.isPreviewMode = false;
+    this.isTransferring = false;
   }
 
   setDeviceId(deviceId) {
@@ -18,11 +18,13 @@ class PlaybackService {
     this.accessToken = token;
   }
 
-  async transferPlaybackToWebPlayer() {
-    if (!this.deviceId || !this.accessToken) return false;
+  async ensureWebPlayerActive() {
+    if (!this.deviceId || !this.accessToken || this.isTransferring) return false;
 
     try {
-      console.log('Transferring playback to web player...');
+      this.isTransferring = true;
+      console.log('Ensuring web player is active...');
+      
       const response = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
         headers: {
@@ -31,16 +33,20 @@ class PlaybackService {
         },
         body: JSON.stringify({
           device_ids: [this.deviceId],
-          play: true // IMPORTANT: Keep playing when transferring
+          play: false // Don't auto-play during transfer
         })
       });
 
       if (response.ok || response.status === 204) {
-        console.log('Successfully transferred to web player');
+        console.log('Web player is now active');
+        // Wait for transfer to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
         return true;
       }
     } catch (error) {
       console.log('Transfer failed:', error);
+    } finally {
+      this.isTransferring = false;
     }
     return false;
   }
@@ -51,13 +57,10 @@ class PlaybackService {
     // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
-        // First transfer any existing playback to web player
-        await this.transferPlaybackToWebPlayer();
-        
-        // Wait a moment for the transfer
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Ensure web player is active first
+        await this.ensureWebPlayerActive();
 
-        // Now start the new track
+        // Now start the new track immediately
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
           headers: {
@@ -95,11 +98,8 @@ class PlaybackService {
     // Premium users: Use Web Playback API
     if (this.isPremium && this.deviceId && this.accessToken) {
       try {
-        // Transfer playback first
-        await this.transferPlaybackToWebPlayer();
-        
-        // Wait for transfer
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Ensure web player is active
+        await this.ensureWebPlayerActive();
 
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
           method: 'PUT',
