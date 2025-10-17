@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
+import PlaylistManager from "../components/PlaylistManager";
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
+  const [showPlaylistManager, setShowPlaylistManager] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -280,9 +282,34 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           </div>
         </section>
 
+        {/* Playlist Manager */}
+        {showPlaylistManager && (
+          <section className="mb-8">
+            <PlaylistManager
+              playlists={playlists}
+              setPlaylists={setPlaylists}
+              onPlaylistSelect={(playlist) => {
+                console.log('Selected playlist:', playlist);
+                setShowPlaylistManager(false);
+              }}
+              onCreatePlaylist={(playlist) => {
+                console.log('Created playlist:', playlist);
+              }}
+            />
+          </section>
+        )}
+
         {/* Playlists with preview indicators */}
         <section className="mb-8">
-          <h3 className="text-xl font-semibold mb-6">Your Playlists</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold">Your Playlists</h3>
+            <button
+              onClick={() => setShowPlaylistManager(!showPlaylistManager)}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {showPlaylistManager ? 'Hide Manager' : 'Manage Playlists'}
+            </button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
             {playlists.map(pl => (
               <div

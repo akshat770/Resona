@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
+import LikedSongsManager from "../components/LikedSongsManager";
 
 export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAccessToken, setIsAuthenticated }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [showManager, setShowManager] = useState(false);
 
   useEffect(() => {
     const fetchLikedSongs = async () => {
@@ -146,6 +148,13 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
           Back to Dashboard
         </Link>
 
+        <button
+          onClick={() => setShowManager(!showManager)}
+          className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+        >
+          {showManager ? 'Hide Manager' : 'Manage Songs'}
+        </button>
+
         {/* Currently Playing Info */}
         {currentlyPlaying && (
           <div className="flex items-center gap-3 ml-4 px-4 py-2 bg-gray-800 rounded-lg border border-gray-700">
@@ -172,6 +181,19 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
           </span>
         </div>
       </div>
+
+      {/* Liked Songs Manager */}
+      {showManager && (
+        <div className="px-8 mb-8">
+          <LikedSongsManager
+            songs={songs}
+            setSongs={setSongs}
+            onSongSelect={(song) => {
+              playTrack(song);
+            }}
+          />
+        </div>
+      )}
 
       {/* Songs List */}
       <div className="px-8 pb-24">
