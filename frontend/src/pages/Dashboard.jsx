@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import SpotifyPlayer from "../components/SpotifyPlayer";
-import PreviewPlayer from "../components/PreviewPlayer";
 import playbackService from "../services/playbackService";
+import PreviewPlayer from "../components/PreviewPlayer";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -16,7 +16,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("jwt");
-      if (!token) return (window.location.href = "/");
+      if (!token) return window.location.href = "/";
 
       try {
         // Decode JWT to extract access token
@@ -62,49 +62,44 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  // UPDATED: Handle device activation properly
-  const handlePlayerReady = (deviceId, isActivated) => {
-    console.log('Player ready with device ID:', deviceId, 'activated:', isActivated);
-    playbackService.setAccessToken(accessToken);
+  const handlePlayerReady = (deviceId) => {
+    console.log('Player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
-    
-    if (isActivated) {
-      console.log('Device ready for playback');
-      setPlayerReady(true);
-      setIsPremium(true); // If web player works, user has Premium
-    } else {
-      console.warn('Device activation failed');
-      setPlayerReady(false);
-    }
+    setPlayerReady(true);
+    setIsPremium(true); // If web player works, user has Premium
   };
 
-  // UPDATED: Gate playback until device is ready
   const playTrack = (track) => {
-    if (!track) return;
-    
-    // For Premium users, wait until device is ready
-    if (isPremium && !playerReady) {
-      console.warn("Player not ready yet. Please wait a moment...");
-      return;
-    }
-    
-    playbackService.playTrack(track.uri, track.preview_url);
-  };
+  if (!track) return;
+  
+  console.log('Playing track:', {
+    name: track.name,
+    uri: track.uri,
+    preview_url: track.preview_url,
+    isPremium
+  });
+  
+  playbackService.playTrack(track.uri, track.preview_url);
+};
 
-  const playPlaylist = (playlist, trackIndex = 0) => {
-    if (!playlist) return;
-    
-    // For Premium users, wait until device is ready
-    if (isPremium && !playerReady) {
-      console.warn("Player not ready yet. Please wait a moment...");
-      return;
-    }
-    
-    // Get first track's preview URL if available
-    const firstTrackPreview = playlist.tracks?.items?.[trackIndex]?.track?.preview_url;
-    
-    playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
-  };
+const playPlaylist = (playlist, trackIndex = 0) => {
+  if (!playlist) return;
+  
+  // Get first track's preview URL
+  let firstTrackPreview = null;
+  if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
+    firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
+  }
+  
+  console.log('Playing playlist:', {
+    name: playlist.name,
+    uri: playlist.uri,
+    preview_url: firstTrackPreview,
+    isPremium
+  });
+  
+  playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
+};
 
   if (!user) {
     return (
@@ -197,7 +192,7 @@ export default function Dashboard() {
               }`}></div>
               <span className="text-sm text-gray-400">
                 {isPremium 
-                  ? (playerReady ? 'Premium Player Ready' : 'Activating Player...')
+                  ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
                   : 'Preview Mode'
                 }
               </span>
@@ -227,6 +222,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Rest of your existing sections remain the same */}
         {/* Quick Actions */}
         <section className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -297,7 +293,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Playlists */}
+        {/* Playlists with preview indicators */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Your Playlists</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -341,7 +337,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Made for You */}
+        {/* Made for You section remains the same */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Made for You</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -364,24 +360,12 @@ export default function Dashboard() {
           </div>
         </section>
       </main>
-
-      {/* UPDATED: Proper player rendering with device activation */}
+      
       {accessToken && (
         isPremium ? (
           <SpotifyPlayer
             accessToken={accessToken}
-            onPlayerReady={(deviceId, isActivated) => {
-              playbackService.setAccessToken(accessToken);
-              playbackService.setDeviceId(deviceId);
-              
-              if (isActivated) {
-                console.log('Device ready for playback');
-                setPlayerReady(true);
-              } else {
-                console.warn('Device activation failed');
-                setPlayerReady(false);
-              }
-            }}
+            onPlayerReady={handlePlayerReady}
           />
         ) : (
           <PreviewPlayer />
