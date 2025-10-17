@@ -1,12 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const SpotifyWebApi = require('spotify-web-api-node');
+const jwt = require('jsonwebtoken'); // Make sure you have this
 
 const spotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
   redirectUri: process.env.SPOTIFY_REDIRECT_URI
 });
+
+// ADDED: Helper function to extract access token from JWT
+function getSpotifyTokenFromJWT(req) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) throw new Error('No authorization header');
+    
+    const jwtToken = authHeader.replace('Bearer ', '');
+    const decoded = jwt.decode(jwtToken); // Decode without verification for now
+    
+    return decoded.accessToken; // This should match how you store it in JWT
+  } catch (error) {
+    console.error('Error extracting token from JWT:', error);
+    return null;
+  }
+}
 
 router.get('/spotify', (req, res) => {
   const scopes = ['user-read-private', 'user-read-email', 'playlist-read-private', 'playlist-modify-public', 'playlist-modify-private', 'user-library-modify', 'user-library-read'];
@@ -30,11 +47,17 @@ router.get('/spotify/callback', async (req, res) => {
   }
 });
 
-// Remove liked songs
+// FIXED: Remove liked songs
 router.delete('/spotify/liked-songs', async (req, res) => {
   try {
     const { trackIds } = req.body;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
+    const accessToken = getSpotifyTokenFromJWT(req);
+    
+    if (!accessToken) {
+      return res.status(401).json({ error: 'No access token found' });
+    }
+    
+    console.log('Removing liked songs:', trackIds);
     
     const response = await fetch('https://api.spotify.com/v1/me/tracks', {
       method: 'DELETE',
@@ -49,24 +72,36 @@ router.delete('/spotify/liked-songs', async (req, res) => {
       res.status(200).json({ message: 'Songs removed successfully' });
     } else {
       const error = await response.json();
+      console.error('Spotify API error:', error);
       res.status(response.status).json(error);
     }
   } catch (error) {
     console.error('Error removing liked songs:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-// Create playlist
+// FIXED: Create playlist
 router.post('/spotify/create-playlist', async (req, res) => {
   try {
     const { name, description, public: isPublic } = req.body;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
+    const accessToken = getSpotifyTokenFromJWT(req);
     
-    // Get user profile first to get user ID
+    if (!accessToken) {
+      return res.status(401).json({ error: 'No access token found' });
+    }
+    
+    console.log('Creating playlist:', { name, description });
+    
+    // Get user profile first
     const profileResponse = await fetch('https://api.spotify.com/v1/me', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     });
+    
+    if (!profileResponse.ok) {
+      return res.status(401).json({ error: 'Invalid access token' });
+    }
+    
     const profile = await profileResponse.json();
     
     const response = await fetch(`https://api.spotify.com/v1/users/${profile.id}/playlists`, {
@@ -87,20 +122,27 @@ router.post('/spotify/create-playlist', async (req, res) => {
       res.status(200).json(playlist);
     } else {
       const error = await response.json();
+      console.error('Spotify API error:', error);
       res.status(response.status).json(error);
     }
   } catch (error) {
     console.error('Error creating playlist:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-// Update playlist
+// FIXED: Update playlist
 router.put('/spotify/update-playlist/:playlistId', async (req, res) => {
   try {
     const { playlistId } = req.params;
     const { name, description } = req.body;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
+    const accessToken = getSpotifyTokenFromJWT(req);
+    
+    if (!accessToken) {
+      return res.status(401).json({ error: 'No access token found' });
+    }
+    
+    console.log('Updating playlist:', { playlistId, name, description });
     
     const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
       method: 'PUT',
@@ -114,23 +156,30 @@ router.put('/spotify/update-playlist/:playlistId', async (req, res) => {
       })
     });
 
-    if (response.ok) {
+    console.log('Spotify API response status:', response.status);
+
+    if (response.ok || response.status === 200) {
       res.status(200).json({ message: 'Playlist updated successfully' });
     } else {
       const error = await response.json();
+      console.error('Spotify API error:', error);
       res.status(response.status).json(error);
     }
   } catch (error) {
     console.error('Error updating playlist:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-// Unfollow/Delete playlist
+// FIXED: Unfollow playlist
 router.delete('/spotify/unfollow-playlist/:playlistId', async (req, res) => {
   try {
     const { playlistId } = req.params;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
+    const accessToken = getSpotifyTokenFromJWT(req);
+    
+    if (!accessToken) {
+      return res.status(401).json({ error: 'No access token found' });
+    }
     
     const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/followers`, {
       method: 'DELETE',
@@ -143,94 +192,12 @@ router.delete('/spotify/unfollow-playlist/:playlistId', async (req, res) => {
       res.status(200).json({ message: 'Playlist unfollowed successfully' });
     } else {
       const error = await response.json();
+      console.error('Spotify API error:', error);
       res.status(response.status).json(error);
     }
   } catch (error) {
     console.error('Error unfollowing playlist:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get playlist tracks
-router.get('/spotify/playlist/:playlistId/tracks', async (req, res) => {
-  try {
-    const { playlistId } = req.params;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-    
-    const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-
-    if (response.ok) {
-      const tracks = await response.json();
-      res.status(200).json(tracks);
-    } else {
-      const error = await response.json();
-      res.status(response.status).json(error);
-    }
-  } catch (error) {
-    console.error('Error fetching playlist tracks:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Add tracks to playlist
-router.post('/spotify/playlist/:playlistId/tracks', async (req, res) => {
-  try {
-    const { playlistId } = req.params;
-    const { uris } = req.body;
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-    
-    const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ uris })
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      res.status(200).json(result);
-    } else {
-      const error = await response.json();
-      res.status(response.status).json(error);
-    }
-  } catch (error) {
-    console.error('Error adding tracks to playlist:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Remove tracks from playlist
-router.delete('/spotify/playlist/:playlistId/tracks', async (req, res) => {
-  try {
-    const { playlistId } = req.params;
-    const { tracks } = req.body; // Array of { uri: "spotify:track:id" }
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-    
-    const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ tracks })
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      res.status(200).json(result);
-    } else {
-      const error = await response.json();
-      res.status(response.status).json(error);
-    }
-  } catch (error) {
-    console.error('Error removing tracks from playlist:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

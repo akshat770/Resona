@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
-import LikedSongsManager from "../components/LikedSongsManager";
+
+// ADDED: Import with error handling
+let LikedSongsManager;
+try {
+  LikedSongsManager = require("../components/LikedSongsManager").default;
+} catch (e) {
+  console.warn("LikedSongsManager component not found");
+  LikedSongsManager = null;
+}
 
 export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAccessToken, setIsAuthenticated }) {
   const [songs, setSongs] = useState([]);
@@ -10,6 +18,7 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
   const [error, setError] = useState(null);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [showManager, setShowManager] = useState(false);
+  const [selectionMethods, setSelectionMethods] = useState(null);
 
   useEffect(() => {
     const fetchLikedSongs = async () => {
@@ -94,6 +103,15 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
     }
   };
 
+  // ADDED: Safe manager toggle
+  const toggleManager = () => {
+    if (!LikedSongsManager) {
+      alert("Song management feature is not available");
+      return;
+    }
+    setShowManager(!showManager);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
@@ -148,8 +166,9 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
           Back to Dashboard
         </Link>
 
+        {/* UPDATED: Safe manager button */}
         <button
-          onClick={() => setShowManager(!showManager)}
+          onClick={toggleManager}
           className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
         >
           {showManager ? 'Hide Manager' : 'Manage Songs'}
@@ -182,15 +201,14 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
         </div>
       </div>
 
-      {/* Liked Songs Manager */}
-      {showManager && (
+      {/* UPDATED: Safe manager rendering */}
+      {showManager && LikedSongsManager && (
         <div className="px-8 mb-8">
           <LikedSongsManager
             songs={songs}
             setSongs={setSongs}
-            onSongSelect={(song) => {
-              playTrack(song);
-            }}
+            onSongSelect={setSelectionMethods}
+            playlists={[]} // Add playlists prop if needed
           />
         </div>
       )}
@@ -215,23 +233,34 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
           <div className="space-y-2">
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 px-4 py-2 text-gray-400 text-sm font-medium border-b border-gray-800">
-              <div className="col-span-1">#</div>
+              <div className="col-span-1">
+                {selectionMethods?.isSelecting ? 'Select' : '#'}
+              </div>
               <div className="col-span-5">Title</div>
               <div className="col-span-3">Album</div>
               <div className="col-span-2">Date Added</div>
               <div className="col-span-1">Duration</div>
             </div>
 
-            {/* Songs */}
-            {songs.map((item, index) => (
+            {/* UPDATED: Songs with selection support */}
+            {(selectionMethods?.filteredSongs || songs).map((item, index) => (
               <div
                 key={item.track.id}
                 className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors ${
                   currentlyPlaying?.id === item.track.id ? 'bg-gray-800 border-l-4 border-green-400' : ''
+                } ${
+                  selectionMethods?.selectedSongs?.has(item.track.id) ? 'bg-blue-900 border-l-4 border-blue-400' : ''
                 }`}
               >
                 <div className="col-span-1 flex items-center">
-                  {currentlyPlaying?.id === item.track.id ? (
+                  {selectionMethods?.isSelecting ? (
+                    <input
+                      type="checkbox"
+                      checked={selectionMethods.selectedSongs.has(item.track.id)}
+                      onChange={() => selectionMethods.toggleSongSelection(item.track.id)}
+                      className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                    />
+                  ) : currentlyPlaying?.id === item.track.id ? (
                     <div className="w-4 h-4 flex items-center justify-center">
                       <div className="flex gap-0.5">
                         <div className="w-0.5 h-4 bg-green-400 animate-pulse"></div>
@@ -304,18 +333,31 @@ export default function LikedSongs({ playerReady, isPremium, setIsPremium, setAc
                       .padStart(2, '0')}
                   </p>
                   
-                  <button
-                    onClick={() => removeLikedSong(item.track.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition-all p-1"
-                    title="Remove from liked songs"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                    </svg>
-                  </button>
+                  {!selectionMethods?.isSelecting && (
+                    <button
+                      onClick={() => removeLikedSong(item.track.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-400 transition-all p-1"
+                      title="Remove from liked songs"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* UPDATED: Safe manager rendering */}
+        {showManager && LikedSongsManager && (
+          <div className="px-8 mb-8">
+            <LikedSongsManager
+              songs={songs}
+              setSongs={setSongs}
+              onSongSelect={setSelectionMethods}
+            />
           </div>
         )}
       </div>
