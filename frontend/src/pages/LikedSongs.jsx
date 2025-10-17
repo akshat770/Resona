@@ -1,3 +1,4 @@
+// frontend/src/pages/LikedSongs.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
@@ -31,11 +32,19 @@ export default function LikedSongs() {
         setAccessToken(spotifyAccessToken);
         playbackService.setAccessToken(spotifyAccessToken);
 
-        // Check user profile for Premium status
+        // Check user profile for Premium status - THIS IS THE KEY FIX
         const profileRes = await api.get("/spotify/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setIsPremium(profileRes.data.product === 'premium');
+        
+        console.log('User profile product:', profileRes.data.product); // Debug log
+        const userIsPremium = profileRes.data.product === 'premium';
+        setIsPremium(userIsPremium);
+        
+        // If user has Premium, mark playback service as Premium too
+        if (userIsPremium) {
+          playbackService.isPremium = true;
+        }
 
         // Fetch liked songs
         const response = await api.get("/spotify/liked-songs", {
@@ -58,9 +67,9 @@ export default function LikedSongs() {
     console.log('Player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
     setPlayerReady(true);
-    setIsPremium(true);
   };
 
+  // Rest of your component remains the same...
   const removeLikedSong = async (trackId) => {
     const token = localStorage.getItem("jwt");
     try {
@@ -69,7 +78,6 @@ export default function LikedSongs() {
         data: { trackIds: [trackId] }
       });
       
-      // Remove from local state
       setSongs(songs.filter(item => item.track.id !== trackId));
     } catch (err) {
       console.error("Error removing liked song:", err);
@@ -87,16 +95,19 @@ export default function LikedSongs() {
       isPremium
     });
     
-    // Set currently playing immediately for UI feedback
     setCurrentlyPlaying(track);
     
-    // Play the track
-    await playbackService.playTrack(track.uri, track.preview_url);
+    // For Premium users without preview, don't show alert
+    if (isPremium || track.preview_url) {
+      await playbackService.playTrack(track.uri, track.preview_url);
+    } else {
+      // Only show alert if no preview AND not Premium
+      alert('No preview available for this track.');
+    }
   };
 
   const playAllLikedSongs = async () => {
     if (songs.length > 0) {
-      // Play first song
       await playTrack(songs[0].track);
     }
   };
@@ -259,6 +270,7 @@ export default function LikedSongs() {
                       {item.track.artists.map(a => a.name).join(", ")}
                     </p>
                   </div>
+                  {/* Remove preview indicators for Premium users */}
                   {!isPremium && item.track.preview_url && (
                     <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
                       30s
@@ -307,7 +319,7 @@ export default function LikedSongs() {
         )}
       </div>
 
-      {/* Player Components */}
+      {/* Player Components - This ensures player is always shown */}
       {accessToken && (
         isPremium ? (
           <SpotifyPlayer 

@@ -11,11 +11,18 @@ class PlaybackService {
 
   setDeviceId(deviceId) {
     this.deviceId = deviceId;
-    this.isPremium = true;
+    console.log('Device ID set:', deviceId);
   }
 
   setAccessToken(token) {
     this.accessToken = token;
+    console.log('Access token set');
+  }
+
+  // ADDED: Method to explicitly set Premium status
+  setIsPremium(premium) {
+    this.isPremium = premium;
+    console.log('Premium status set to:', premium);
   }
 
   async ensureWebPlayerActive() {
@@ -90,7 +97,10 @@ class PlaybackService {
       this.playPreview(previewUrl);
     } else {
       console.log('No preview available');
-      alert('No preview available for this track. Please upgrade to Spotify Premium for full playback.');
+      // Only show alert for non-Premium users
+      if (!this.isPremium) {
+        alert('No preview available for this track. Please upgrade to Spotify Premium for full playback.');
+      }
     }
   }
 
@@ -126,7 +136,10 @@ class PlaybackService {
     if (firstTrackPreview) {
       this.playPreview(firstTrackPreview);
     } else {
-      alert('No preview available for this playlist. Please upgrade to Spotify Premium.');
+      // Only show alert for non-Premium users
+      if (!this.isPremium) {
+        alert('No preview available for this playlist. Please upgrade to Spotify Premium.');
+      }
     }
   }
 
