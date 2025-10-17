@@ -2,16 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
-import SpotifyPlayer from "../components/SpotifyPlayer";
-import PreviewPlayer from "../components/PreviewPlayer";
 
-export default function LikedSongs() {
+export default function LikedSongs({ playerReady, isPremium }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isPremium, setIsPremium] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
-  const [playerReady, setPlayerReady] = useState(false);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
 
   useEffect(() => {
@@ -28,14 +23,7 @@ export default function LikedSongs() {
         // Set up access token for playback
         const payload = JSON.parse(atob(token.split('.')[1]));
         const spotifyAccessToken = payload.accessToken;
-        setAccessToken(spotifyAccessToken);
         playbackService.setAccessToken(spotifyAccessToken);
-
-        // Check user profile for Premium status
-        const profileRes = await api.get("/spotify/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsPremium(profileRes.data.product === 'premium');
 
         // Fetch liked songs
         const response = await api.get("/spotify/liked-songs", {
@@ -54,22 +42,6 @@ export default function LikedSongs() {
     fetchLikedSongs();
   }, []);
 
-  // UPDATED: Handle device activation properly
-  const handlePlayerReady = (deviceId, isActivated) => {
-    console.log('Player ready with device ID:', deviceId, 'activated:', isActivated);
-    playbackService.setAccessToken(accessToken);
-    playbackService.setDeviceId(deviceId);
-    
-    if (isActivated) {
-      console.log('Device ready for playback');
-      setPlayerReady(true);
-      setIsPremium(true);
-    } else {
-      console.warn('Device activation failed');
-      setPlayerReady(false);
-    }
-  };
-
   const removeLikedSong = async (trackId) => {
     const token = localStorage.getItem("jwt");
     try {
@@ -86,15 +58,8 @@ export default function LikedSongs() {
     }
   };
 
-  // UPDATED: Gate playback until device is ready
   const playTrack = async (track) => {
     if (!track) return;
-    
-    // For Premium users, wait until device is ready
-    if (isPremium && !playerReady) {
-      console.warn("Player not ready yet. Please wait a moment...");
-      return;
-    }
     
     console.log('Playing track from liked songs:', {
       name: track.name,
@@ -153,7 +118,7 @@ export default function LikedSongs() {
       <div className="px-8 py-6 flex items-center gap-6">
         <button
           onClick={playAllLikedSongs}
-          disabled={songs.length === 0 || (isPremium && !playerReady)}
+          disabled={songs.length === 0}
           className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
         >
           <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -191,7 +156,7 @@ export default function LikedSongs() {
           }`}></div>
           <span className="text-sm text-gray-400">
             {isPremium 
-              ? (playerReady ? 'Premium Player Ready' : 'Activating Player...')
+              ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
               : 'Preview Mode'
             }
           </span>
@@ -249,8 +214,7 @@ export default function LikedSongs() {
                       </span>
                       <button
                         onClick={() => playTrack(item.track)}
-                        disabled={isPremium && !playerReady}
-                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors disabled:text-gray-600"
+                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
@@ -323,7 +287,6 @@ export default function LikedSongs() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

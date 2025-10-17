@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import SpotifyPlayer from "../components/SpotifyPlayer";
 import playbackService from "../services/playbackService";
-import PreviewPlayer from "../components/PreviewPlayer";
 
-export default function Dashboard() {
+export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
-  const [accessToken, setAccessToken] = useState(null);
-  const [playerReady, setPlayerReady] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,6 +18,7 @@ export default function Dashboard() {
         const spotifyAccessToken = payload.accessToken;
         
         setAccessToken(spotifyAccessToken);
+        setIsAuthenticated(true);
         playbackService.setAccessToken(spotifyAccessToken);
 
         // Verify session
@@ -59,46 +55,39 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, []);
-
-  const handlePlayerReady = (deviceId) => {
-    console.log('Player ready with device ID:', deviceId);
-    playbackService.setDeviceId(deviceId);
-    setPlayerReady(true);
-    setIsPremium(true); // If web player works, user has Premium
-  };
+  }, [setAccessToken, setIsPremium, setIsAuthenticated]);
 
   const playTrack = (track) => {
-  if (!track) return;
-  
-  console.log('Playing track:', {
-    name: track.name,
-    uri: track.uri,
-    preview_url: track.preview_url,
-    isPremium
-  });
-  
-  playbackService.playTrack(track.uri, track.preview_url);
-};
+    if (!track) return;
+    
+    console.log('Playing track:', {
+      name: track.name,
+      uri: track.uri,
+      preview_url: track.preview_url,
+      isPremium
+    });
+    
+    playbackService.playTrack(track.uri, track.preview_url);
+  };
 
-const playPlaylist = (playlist, trackIndex = 0) => {
-  if (!playlist) return;
-  
-  // Get first track's preview URL
-  let firstTrackPreview = null;
-  if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
-    firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
-  }
-  
-  console.log('Playing playlist:', {
-    name: playlist.name,
-    uri: playlist.uri,
-    preview_url: firstTrackPreview,
-    isPremium
-  });
-  
-  playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
-};
+  const playPlaylist = (playlist, trackIndex = 0) => {
+    if (!playlist) return;
+    
+    // Get first track's preview URL
+    let firstTrackPreview = null;
+    if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
+      firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
+    }
+    
+    console.log('Playing playlist:', {
+      name: playlist.name,
+      uri: playlist.uri,
+      preview_url: firstTrackPreview,
+      isPremium
+    });
+    
+    playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
+  };
 
   if (!user) {
     return (
@@ -221,7 +210,6 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         )}
 
-        {/* Rest of your existing sections remain the same */}
         {/* Quick Actions */}
         <section className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -336,7 +324,7 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         </section>
 
-        {/* Made for You section remains the same */}
+        {/* Made for You section */}
         <section className="mb-8">
           <h3 className="text-xl font-semibold mb-6">Made for You</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -359,17 +347,6 @@ const playPlaylist = (playlist, trackIndex = 0) => {
           </div>
         </section>
       </main>
-      
-      {accessToken && (
-        isPremium ? (
-          <SpotifyPlayer
-            accessToken={accessToken}
-            onPlayerReady={handlePlayerReady}
-          />
-        ) : (
-          <PreviewPlayer />
-        )
-      )}
     </div>
   );
 }

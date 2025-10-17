@@ -17,6 +17,15 @@ class PlaybackService {
     this.accessToken = token;
   }
 
+  // ADDED: Missing method for PreviewPlayer
+  getCurrentPreview() {
+    return {
+      url: this.currentPreviewUrl,
+      isPlaying: this.isPreviewPlaying(),
+      currentTime: this.audioElement?.currentTime || 0
+    };
+  }
+
   async transferPlaybackToWebPlayer() {
     if (!this.deviceId || !this.accessToken) return false;
 
@@ -129,7 +138,7 @@ class PlaybackService {
     }
   }
 
-  // Preview methods remain the same...
+  // Preview methods
   playPreview(previewUrl) {
     if (!previewUrl) return;
     
