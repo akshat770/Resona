@@ -2,17 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
-import SpotifyPlayer from "../components/SpotifyPlayer";
-import PreviewPlayer from "../components/PreviewPlayer";
 
 export default function LikedSongs() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
-  const [playerReady, setPlayerReady] = useState(false);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
 
   useEffect(() => {
     const fetchLikedSongs = async () => {
@@ -24,31 +19,14 @@ export default function LikedSongs() {
 
       try {
         setLoading(true);
-        
-        // Set up access token for playback
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const spotifyAccessToken = payload.accessToken;
-        setAccessToken(spotifyAccessToken);
-        playbackService.setAccessToken(spotifyAccessToken);
-
-        // Check user profile for Premium status
-        const profileRes = await api.get("/spotify/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        console.log('User profile product:', profileRes.data.product);
-        const userIsPremium = profileRes.data.product === 'premium';
-        setIsPremium(userIsPremium);
-        
-        // Set Premium status in playback service
-        playbackService.setIsPremium(userIsPremium);
-
-        // Fetch liked songs
         const response = await api.get("/spotify/liked-songs", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSongs(response.data.items || []);
         
+        // Check if user is premium
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setIsPremium(!!payload.accessToken);
       } catch (err) {
         console.error("Error fetching liked songs:", err);
         setError("Failed to load liked songs");
@@ -60,12 +38,6 @@ export default function LikedSongs() {
     fetchLikedSongs();
   }, []);
 
-  const handlePlayerReady = (deviceId) => {
-    console.log('Player ready with device ID:', deviceId);
-    playbackService.setDeviceId(deviceId);
-    setPlayerReady(true);
-  };
-
   const removeLikedSong = async (trackId) => {
     const token = localStorage.getItem("jwt");
     try {
@@ -74,6 +46,7 @@ export default function LikedSongs() {
         data: { trackIds: [trackId] }
       });
       
+      // Remove from local state
       setSongs(songs.filter(item => item.track.id !== trackId));
     } catch (err) {
       console.error("Error removing liked song:", err);
@@ -81,55 +54,15 @@ export default function LikedSongs() {
     }
   };
 
-  const playTrack = async (track) => {
-    if (!track) return;
-    
-    console.log('Playing track from liked songs:', {
-      name: track.name,
-      uri: track.uri,
-      preview_url: track.preview_url,
-      isPremium
-    });
-    
-    setCurrentlyPlaying(track);
-    
-    // Always try to play the track - let playbackService handle the logic
-    await playbackService.playTrack(track.uri, track.preview_url);
+  const playTrack = (track) => {
+    playbackService.playTrack(track.uri, track.preview_url);
   };
 
-  const playAllLikedSongs = async () => {
-    if (songs.length > 0) {
-      await playTrack(songs[0].track);
-    }
-  };
-
-  const activateWebPlayer = async () => {
-    if (!playbackService.deviceId || !accessToken) {
-      alert('Web player not ready. Please refresh the page.');
-      return;
-    }
-
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          device_ids: [playbackService.deviceId],
-          play: false
-        })
-      });
-
-      if (response.status === 204) {
-        alert('Web player activated! Now try playing a song.');
-        setPlayerReady(true);
-      } else {
-        alert('Please start playing music on Spotify app first, then try again.');
-      }
-    } catch (error) {
-      alert('Activation failed. Make sure Spotify is running somewhere else first.');
+  const playAllLikedSongs = () => {
+    if (songs.length > 0 && isPremium) {
+      // Create temporary playlist URI for all liked songs
+      const trackUris = songs.map(item => item.track.uri);
+      playbackService.playTrack(trackUris[0], songs[0].track.preview_url);
     }
   };
 
@@ -145,7 +78,7 @@ export default function LikedSongs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pb-24">
+    <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
       <div className="bg-gradient-to-b from-green-600 to-gray-900 p-8">
         <div className="flex items-center gap-6">
@@ -158,99 +91,28 @@ export default function LikedSongs() {
             <p className="text-sm font-medium text-green-200">Playlist</p>
             <h1 className="text-6xl font-bold mb-4">Liked Songs</h1>
             <p className="text-gray-300">{songs.length} songs</p>
-            <p className="text-gray-400 text-sm mt-2">
-              {isPremium ? 'Full playback available in web app' : '30-second previews in web app'}
-            </p>
           </div>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="px-8 py-6 flex items-center gap-6 flex-wrap">
+      <div className="px-8 py-6 flex items-center gap-6">
         <button
           onClick={playAllLikedSongs}
-          disabled={songs.length === 0}
-          className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
+          className="bg-green-500 hover:bg-green-400 text-black rounded-full w-14 h-14 flex items-center justify-center hover:scale-105 transition-all shadow-lg"
         >
           <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z"/>
           </svg>
         </button>
-
-        {/* Activate Web Player Button for Premium users */}
-        {isPremium && playbackService.deviceId && !playerReady && (
-          <button
-            onClick={activateWebPlayer}
-            className="bg-blue-500 hover:bg-blue-400 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-            </svg>
-            Activate Web Player
-          </button>
-        )}
         
         <Link 
           to="/dashboard"
-          className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+          className="text-gray-400 hover:text-white transition-colors"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-          </svg>
-          Back to Dashboard
+          ← Back to Dashboard
         </Link>
-
-        {/* Currently Playing Info */}
-        {currentlyPlaying && (
-          <div className="flex items-center gap-3 ml-4 px-4 py-2 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <div className="text-sm">
-              <p className="text-white font-medium">Now Playing</p>
-              <p className="text-gray-400 truncate max-w-64">{currentlyPlaying.name}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Player Status */}
-        <div className="flex items-center gap-2 ml-auto">
-          <div className={`w-2 h-2 rounded-full ${
-            isPremium 
-              ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
-              : 'bg-blue-400'
-          }`}></div>
-          <span className="text-sm text-gray-400">
-            {isPremium 
-              ? (playerReady ? 'Premium Player Ready' : 'Premium - Web Player Available')
-              : 'Preview Mode'
-            }
-          </span>
-        </div>
       </div>
-
-      {/* Help Banner for Premium Users */}
-      {isPremium && !playerReady && (
-        <div className="mx-8 mb-6 bg-blue-900 border border-blue-700 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M13 9h-2V7h2m0 10h-2v-6h2m-1-9A10 10 0 002 12a10 10 0 0010 10 10 10 0 0010-10A10 10 0 0012 2z"/>
-            </svg>
-            <div>
-              <h3 className="text-white font-semibold mb-1">Premium Web Playback Available</h3>
-              <p className="text-blue-200 text-sm mb-3">
-                To enable full song playback in your browser:
-              </p>
-              <ol className="text-blue-200 text-sm space-y-1 list-decimal list-inside">
-                <li>Start playing any song on Spotify app (phone/desktop)</li>
-                <li>Click the "Activate Web Player" button above</li>
-                <li>Enjoy full songs directly in your browser!</li>
-              </ol>
-              <p className="text-blue-300 text-xs mt-2">
-                Songs without previews will still play as full tracks when web player is active.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Songs List */}
       <div className="px-8 pb-24">
@@ -283,34 +145,20 @@ export default function LikedSongs() {
             {songs.map((item, index) => (
               <div
                 key={item.track.id}
-                className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors ${
-                  currentlyPlaying?.id === item.track.id ? 'bg-gray-800 border-l-4 border-green-400' : ''
-                }`}
+                className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors"
               >
                 <div className="col-span-1 flex items-center">
-                  {currentlyPlaying?.id === item.track.id ? (
-                    <div className="w-4 h-4 flex items-center justify-center">
-                      <div className="flex gap-0.5">
-                        <div className="w-0.5 h-4 bg-green-400 animate-pulse"></div>
-                        <div className="w-0.5 h-2 bg-green-400 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-0.5 h-3 bg-green-400 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="text-gray-400 group-hover:hidden text-sm">
-                        {index + 1}
-                      </span>
-                      <button
-                        onClick={() => playTrack(item.track)}
-                        className="hidden group-hover:block text-white hover:text-green-400 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </button>
-                    </>
-                  )}
+                  <span className="text-gray-400 group-hover:hidden text-sm">
+                    {index + 1}
+                  </span>
+                  <button
+                    onClick={() => playTrack(item.track)}
+                    className="hidden group-hover:block text-white hover:text-green-400"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
                 </div>
 
                 <div className="col-span-5 flex items-center gap-3">
@@ -320,28 +168,16 @@ export default function LikedSongs() {
                     className="w-10 h-10 rounded"
                   />
                   <div className="min-w-0">
-                    <p className={`font-medium truncate ${
-                      currentlyPlaying?.id === item.track.id ? 'text-green-400' : 'text-white'
-                    }`}>
+                    <p className="font-medium text-white truncate">
                       {item.track.name}
                     </p>
                     <p className="text-sm text-gray-400 truncate">
                       {item.track.artists.map(a => a.name).join(", ")}
                     </p>
                   </div>
-                  
-                  {/* Preview/Playback indicators */}
-                  {isPremium ? (
-                    <span className="text-xs bg-green-600 text-white px-2 py-1 rounded">
-                      Full Track
-                    </span>
-                  ) : item.track.preview_url ? (
+                  {!isPremium && item.track.preview_url && (
                     <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                      30s Preview
-                    </span>
-                  ) : (
-                    <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">
-                      No Preview
+                      Preview
                     </span>
                   )}
                 </div>
@@ -381,18 +217,6 @@ export default function LikedSongs() {
           </div>
         )}
       </div>
-
-      {/* Player Components */}
-      {accessToken && (
-        isPremium ? (
-          <SpotifyPlayer 
-            accessToken={accessToken} 
-            onPlayerReady={handlePlayerReady}
-          />
-        ) : (
-          <PreviewPlayer />
-        )
-      )}
     </div>
   );
 }

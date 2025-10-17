@@ -36,14 +36,7 @@ export default function Dashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(profileRes.data);
-        
-        // FIXED: Proper Premium detection
-        console.log('User profile product:', profileRes.data.product);
-        const userIsPremium = profileRes.data.product === 'premium';
-        setIsPremium(userIsPremium);
-        
-        // Set Premium status in playback service
-        playbackService.setIsPremium(userIsPremium);
+        setIsPremium(profileRes.data.product === 'premium');
 
         const playlistsRes = await api.get("/spotify/user-playlists", {
           headers: { Authorization: `Bearer ${token}` },
@@ -75,6 +68,7 @@ export default function Dashboard() {
     console.log('Player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
     setPlayerReady(true);
+    setIsPremium(true);
   };
 
   const playTrack = (track) => {
@@ -193,22 +187,6 @@ export default function Dashboard() {
             />
           </div>
         </div>
-
-        {/* Premium Upgrade Banner for Free Users */}
-        {!isPremium && (
-          <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 rounded-xl mb-8 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
-              <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
-            </div>
-            <button 
-              onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
-              className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Upgrade
-            </button>
-          </div>
-        )}
 
         {/* Quick Actions */}
         <section className="mb-8">
