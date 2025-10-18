@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import api from '../api/axios';
 
 export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [player, setPlayer] = useState(null);
@@ -13,9 +14,32 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(0.5);
   const [isVolumeSliderActive, setIsVolumeSliderActive] = useState(false);
+  const [isLiked, setIsLiked] = useState(false); // ADDED
+  const [showAddToMenu, setShowAddToMenu] = useState(false); // ADDED
+  const [playlists, setPlaylists] = useState([]); // ADDED
   const playerRef = useRef(null);
   const volumeContainerRef = useRef(null);
+  const addToMenuRef = useRef(null); // ADDED
   const progressIntervalRef = useRef(null);
+
+  // ADDED: Fetch playlists and check liked status when track changes
+  useEffect(() => {
+    if (currentTrack) {
+      fetchPlaylists();
+      checkIfLiked();
+    }
+  }, [currentTrack]);
+
+  // ADDED: Handle click outside for add-to menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (addToMenuRef.current && !addToMenuRef.current.contains(event.target)) {
+        setShowAddToMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // FIXED: Real-time progress updates
   useEffect(() => {
@@ -136,6 +160,77 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       }
     };
   }, [accessToken, onPlayerReady]);
+
+  // ADDED: Fetch playlists for add-to feature
+  const fetchPlaylists = async () => {
+    const token = localStorage.getItem("jwt");
+    try {
+      const response = await api.get("/spotify/user-playlists", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPlaylists(response.data.items || []);
+    } catch (error) {
+      console.error("Error fetching playlists:", error);
+    }
+  };
+
+  // ADDED: Check if current track is liked
+  const checkIfLiked = async () => {
+    if (!currentTrack) return;
+    const token = localStorage.getItem("jwt");
+    try {
+      const response = await api.get(`/spotify/check-liked/${currentTrack.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsLiked(response.data[0]);
+    } catch (error) {
+      console.error("Error checking liked status:", error);
+    }
+  };
+
+  // ADDED: Toggle liked status
+  const toggleLiked = async () => {
+    if (!currentTrack) return;
+    const token = localStorage.getItem("jwt");
+    
+    try {
+      if (isLiked) {
+        await api.delete("/spotify/liked-songs", {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { trackIds: [currentTrack.id] }
+        });
+        setIsLiked(false);
+      } else {
+        await api.put("/spotify/liked-songs", {
+          trackIds: [currentTrack.id]
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setIsLiked(true);
+      }
+    } catch (error) {
+      console.error("Error toggling liked:", error);
+    }
+  };
+
+  // ADDED: Add to playlist function
+  const addToPlaylist = async (playlistId) => {
+    if (!currentTrack) return;
+    const token = localStorage.getItem("jwt");
+    
+    try {
+      await api.post(`/spotify/playlist/${playlistId}/tracks`, {
+        tracks: [currentTrack.uri] // Fixed: use 'tracks' instead of 'uris'
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("Song added to playlist!");
+      setShowAddToMenu(false);
+    } catch (error) {
+      console.error("Error adding to playlist:", error);
+      alert("Failed to add to playlist");
+    }
+  };
 
   const togglePlay = () => {
     if (!player || !currentTrack) {
@@ -279,11 +374,67 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               </div>
             )}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-white truncate">{currentTrack.name}</p>
             <p className="text-gray-400 text-sm truncate">
               {currentTrack.artists.map(artist => artist.name).join(', ')}
             </p>
+          </div>
+          
+          {/* ADDED: Like and Add to Playlist buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleLiked}
+              className={`p-2 rounded-full transition-all duration-200 ${
+                isLiked 
+                  ? 'text-green-400 hover:text-green-300' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
+              title={isLiked ? 'Remove from liked songs' : 'Add to liked songs'}
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </button>
+            
+            <div className="relative" ref={addToMenuRef}>
+              <button
+                onClick={() => setShowAddToMenu(!showAddToMenu)}
+                className="text-gray-400 hover:text-white p-2 rounded-full transition-colors"
+                title="Add to playlist"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                </svg>
+              </button>
+              
+              {/* Add to Playlist Menu */}
+              {showAddToMenu && (
+                <div className="absolute bottom-full left-0 mb-2 bg-gray-800/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-600 min-w-48 z-10">
+                  <div className="p-2">
+                    <p className="text-xs text-gray-400 px-2 py-1 border-b border-gray-700 mb-2">Add to playlist:</p>
+                    <div className="max-h-40 overflow-y-auto">
+                      {playlists.length > 0 ? playlists.map(playlist => (
+                        <button
+                          key={playlist.id}
+                          onClick={() => addToPlaylist(playlist.id)}
+                          className="w-full text-left px-2 py-2 text-sm text-white hover:bg-gray-700 rounded flex items-center gap-2 transition-colors"
+                        >
+                          <img
+                            src={playlist.images?.[0]?.url || "/placeholder.png"}
+                            alt={playlist.name}
+                            className="w-6 h-6 rounded"
+                          />
+                          <span className="truncate">{playlist.name}</span>
+                        </button>
+                      )) : (
+                        <p className="text-xs text-gray-500 px-2 py-1">No playlists found</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -472,3 +623,4 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     </div>
   );
 }
+

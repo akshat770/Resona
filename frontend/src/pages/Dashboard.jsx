@@ -3,6 +3,7 @@ import api from "../api/axios";
 import playbackService from "../services/playbackService";
 import PlaylistManager from "../components/PlaylistManager";
 import LikedSongsPopup from "../components/LikedSongsPopup"; // ADDED
+import PlaylistPopup from "../components/PlaylistPopup"; // ADDED
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
@@ -10,6 +11,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [recent, setRecent] = useState([]);
   const [showPlaylistManager, setShowPlaylistManager] = useState(false);
   const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false); // ADDED
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null); // ADDED
+  const [showPlaylistPopup, setShowPlaylistPopup] = useState(false); // ADDED
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,6 +103,12 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     });
     
     playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
+  };
+
+  // ADDED: Open playlist popup
+  const openPlaylistPopup = (playlist) => {
+    setSelectedPlaylist(playlist);
+    setShowPlaylistPopup(true);
   };
 
   if (!user) {
@@ -331,6 +340,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
               <div
                 key={pl.id}
                 className="bg-gray-800 hover:bg-gray-750 p-4 rounded-xl transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
+                onClick={() => openPlaylistPopup(pl)} // UPDATED: Open popup instead of playing
               >
                 <div className="relative mb-4">
                   <img
@@ -391,13 +401,24 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </section>
       </main>
 
-      {/* ADDED: Liked Songs Popup */}
+      {/* ADDED: Popups */}
       <LikedSongsPopup
         isOpen={showLikedSongsPopup}
         onClose={() => setShowLikedSongsPopup(false)}
         playerReady={playerReady}
         isPremium={isPremium}
         playlists={playlists}
+      />
+      
+      <PlaylistPopup
+        isOpen={showPlaylistPopup}
+        onClose={() => {
+          setShowPlaylistPopup(false);
+          setSelectedPlaylist(null);
+        }}
+        playlist={selectedPlaylist}
+        playerReady={playerReady}
+        isPremium={isPremium}
       />
     </div>
   );
