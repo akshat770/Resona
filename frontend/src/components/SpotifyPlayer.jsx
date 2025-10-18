@@ -12,7 +12,48 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [isMuted, setIsMuted] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(0.5);
+  const [isVolumeSliderActive, setIsVolumeSliderActive] = useState(false);
   const playerRef = useRef(null);
+  const volumeContainerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
+
+  // FIXED: Real-time progress updates
+  useEffect(() => {
+    if (isPlaying && player) {
+      progressIntervalRef.current = setInterval(() => {
+        player.getCurrentState().then(state => {
+          if (state) {
+            setPosition(state.position);
+          }
+        });
+      }, 1000);
+    } else {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [isPlaying, player]);
+
+  // FIXED: Volume slider persistence
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (volumeContainerRef.current && !volumeContainerRef.current.contains(event.target)) {
+        if (!isVolumeSliderActive) {
+          setShowVolumeSlider(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isVolumeSliderActive]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -45,7 +86,6 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       });
 
       spotifyPlayer.addListener('playback_error', ({ message }) => {
-        // Only log unexpected errors, not "no list loaded"
         if (!message.includes('no list was loaded')) {
           console.error('Playback error:', message);
         }
@@ -91,6 +131,9 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       if (playerRef.current) {
         playerRef.current.disconnect();
       }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
     };
   }, [accessToken, onPlayerReady]);
 
@@ -133,7 +176,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     });
   };
 
-  // ADDED: Volume control functions
+  // FIXED: Volume control functions with better persistence
   const handleVolumeChange = (newVolume) => {
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
@@ -152,6 +195,23 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       setIsMuted(true);
       player?.setVolume(0);
     }
+  };
+
+  // ADDED: Progress bar seek functionality
+  const handleProgressClick = (e) => {
+    if (!player || !duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const percentage = clickX / width;
+    const newPosition = percentage * duration;
+    
+    player.seek(newPosition).then(() => {
+      setPosition(newPosition);
+    }).catch(error => {
+      console.error('Seek failed:', error);
+    });
   };
 
   const getVolumeIcon = () => {
@@ -264,12 +324,15 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             </button>
           </div>
 
-          {/* Enhanced Progress Bar */}
+          {/* FIXED: Enhanced Progress Bar with seek functionality */}
           <div className="flex items-center gap-3 w-full">
             <span className="text-xs text-gray-400 min-w-[2.5rem] text-right font-mono">
               {formatTime(position)}
             </span>
-            <div className="flex-1 bg-gray-700 rounded-full h-2 relative group cursor-pointer">
+            <div 
+              className="flex-1 bg-gray-700 rounded-full h-2 relative group cursor-pointer"
+              onClick={handleProgressClick}
+            >
               <div 
                 className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-150 relative"
                 style={{ width: `${duration > 0 ? (position / duration) * 100 : 0}%` }}
@@ -284,12 +347,17 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
           </div>
         </div>
 
-        {/* Futuristic Volume Control */}
+        {/* FIXED: Persistent Volume Control */}
         <div className="flex items-center gap-3 flex-1 justify-end relative">
           <div 
+            ref={volumeContainerRef}
             className="relative"
             onMouseEnter={() => setShowVolumeSlider(true)}
-            onMouseLeave={() => setShowVolumeSlider(false)}
+            onMouseLeave={() => {
+              if (!isVolumeSliderActive) {
+                setShowVolumeSlider(false);
+              }
+            }}
           >
             <button
               onClick={toggleMute}
@@ -309,11 +377,15 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               </div>
             </button>
 
-            {/* Futuristic Volume Slider */}
+            {/* FIXED: Persistent Volume Slider */}
             <div className={`absolute bottom-full right-0 mb-2 transition-all duration-300 ${
               showVolumeSlider ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
             }`}>
-              <div className="bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50">
+              <div 
+                className="bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50"
+                onMouseEnter={() => setIsVolumeSliderActive(true)}
+                onMouseLeave={() => setIsVolumeSliderActive(false)}
+              >
                 <div className="flex flex-col items-center gap-3">
                   {/* Volume Percentage */}
                   <div className="text-xs text-green-400 font-mono font-semibold">
@@ -335,7 +407,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                       step="0.01"
                       value={volume}
                       onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rotate-180"
                       style={{ 
                         writingMode: 'bt-lr',
                         WebkitAppearance: 'slider-vertical'
@@ -345,7 +417,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
                   {/* Volume Levels Visualization */}
                   <div className="flex flex-col gap-1 items-center">
-                    {[0.8, 0.6, 0.4, 0.2].map((level, index) => (
+                    {[0.8, 0.6, 0.4, 0.2].map((level) => (
                       <div
                         key={level}
                         className={`w-1 h-1 rounded-full transition-all duration-200 ${
