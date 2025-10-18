@@ -10,13 +10,14 @@ const spotifyApi = new SpotifyWebApi({
   redirectUri: process.env.SPOTIFY_REDIRECT_URI,
 });
 
-// ✅ FIXED: Route name matches frontend expectation
+// UPDATED: Added missing scope for liked songs modification
 router.get("/spotify", (req, res) => {
   const scopes = [
     "user-read-email",
     "user-read-private",
     "user-read-recently-played",   // FOR RECENT TRACKS
     "user-library-read",           // FOR LIKED SONGS
+    "user-library-modify",         // ADDED: FOR ADDING/REMOVING LIKED SONGS
     "playlist-read-private",
     "playlist-modify-private",
     "playlist-modify-public",
