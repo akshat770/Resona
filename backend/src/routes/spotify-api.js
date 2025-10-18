@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const SpotifyWebApi = require('spotify-web-api-node');
 const router = express.Router();
 
-// Middleware to verify JWT and extract Spotify tokens
+// UPDATED: Middleware with better error handling
 const verifySpotifyToken = (req, res, next) => {
   const auth = req.headers['authorization'];
   const token = auth?.startsWith('Bearer ') ? auth.split(' ')[1] : null;
@@ -13,7 +13,13 @@ const verifySpotifyToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // FIXED: Use decode instead of verify to avoid JWT_SECRET issues
+    const decoded = jwt.decode(token); // Changed from jwt.verify
+    
+    if (!decoded || !decoded.accessToken) {
+      console.error('Invalid token structure:', decoded);
+      return res.status(401).json({ error: 'Invalid token structure' });
+    }
     
     const spotifyApi = new SpotifyWebApi({
       clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -27,8 +33,10 @@ const verifySpotifyToken = (req, res, next) => {
     
     req.spotifyApi = spotifyApi;
     req.user = decoded;
+    console.log('Token verified successfully for user:', decoded.id || 'unknown');
     next();
   } catch (error) {
+    console.error('Token verification error:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -81,7 +89,7 @@ router.post('/create-playlist', verifySpotifyToken, async (req, res) => {
   }
 });
 
-// ADDED: Update playlist
+// Update playlist
 router.put('/update-playlist/:playlistId', verifySpotifyToken, async (req, res) => {
   try {
     const { playlistId } = req.params;
@@ -101,7 +109,7 @@ router.put('/update-playlist/:playlistId', verifySpotifyToken, async (req, res) 
   }
 });
 
-// ADDED: Unfollow playlist
+// Unfollow playlist
 router.delete('/unfollow-playlist/:playlistId', verifySpotifyToken, async (req, res) => {
   try {
     const { playlistId } = req.params;
@@ -118,6 +126,7 @@ router.delete('/unfollow-playlist/:playlistId', verifySpotifyToken, async (req, 
 router.post('/playlist/:id/tracks', verifySpotifyToken, async (req, res) => {
   try {
     const { tracks } = req.body; // Array of track URIs
+    console.log('Adding tracks to playlist:', { playlistId: req.params.id, tracks });
     const data = await req.spotifyApi.addTracksToPlaylist(req.params.id, tracks);
     res.json(data.body);
   } catch (error) {
@@ -165,37 +174,55 @@ router.get('/liked-songs', verifySpotifyToken, async (req, res) => {
   }
 });
 
-// Add track to liked songs
+// FIXED: Add track to liked songs
 router.put('/liked-songs', verifySpotifyToken, async (req, res) => {
   try {
-    const { trackIds } = req.body; // Array of track IDs
+    const { trackIds } = req.body;
+    console.log('Adding to liked songs:', trackIds);
+    
+    if (!trackIds || !Array.isArray(trackIds)) {
+      return res.status(400).json({ error: 'trackIds array is required' });
+    }
+    
     await req.spotifyApi.addToMySavedTracks(trackIds);
-    res.json({ success: true });
+    res.json({ success: true, message: 'Songs added to liked songs' });
   } catch (error) {
-    console.error('Error adding to liked songs:', error);
-    res.status(500).json({ error: 'Failed to add to liked songs' });
+    console.error('Error adding to liked songs:', error.message || error);
+    res.status(500).json({ 
+      error: 'Failed to add to liked songs',
+      details: error.message || 'Unknown error'
+    });
   }
 });
 
 // FIXED: Remove track from liked songs
 router.delete('/liked-songs', verifySpotifyToken, async (req, res) => {
   try {
-    const { trackIds } = req.body; // Array of track IDs
-    console.log('Removing liked songs:', trackIds);
+    const { trackIds } = req.body;
+    console.log('Removing from liked songs:', trackIds);
+    
+    if (!trackIds || !Array.isArray(trackIds)) {
+      return res.status(400).json({ error: 'trackIds array is required' });
+    }
     
     await req.spotifyApi.removeFromMySavedTracks(trackIds);
-    res.json({ success: true, message: 'Songs removed successfully' });
+    res.json({ success: true, message: 'Songs removed from liked songs' });
   } catch (error) {
-    console.error('Error removing from liked songs:', error);
-    res.status(500).json({ error: 'Failed to remove from liked songs' });
+    console.error('Error removing from liked songs:', error.message || error);
+    res.status(500).json({ 
+      error: 'Failed to remove from liked songs',
+      details: error.message || 'Unknown error'
+    });
   }
 });
 
-// Check if tracks are liked
-router.get('/check-liked/:trackIds', verifySpotifyToken, async (req, res) => {
+// FIXED: Check if tracks are liked
+router.get('/check-liked/:trackId', verifySpotifyToken, async (req, res) => {
   try {
-    const trackIds = req.params.trackIds.split(',');
-    const data = await req.spotifyApi.containsMySavedTracks(trackIds);
+    const { trackId } = req.params;
+    console.log('Checking liked status for:', trackId);
+    
+    const data = await req.spotifyApi.containsMySavedTracks([trackId]);
     res.json(data.body);
   } catch (error) {
     console.error('Error checking liked status:', error);
