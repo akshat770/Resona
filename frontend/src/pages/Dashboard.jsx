@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
 import PlaylistManager from "../components/PlaylistManager";
+import LikedSongsPopup from "../components/LikedSongsPopup"; // ADDED
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
   const [showPlaylistManager, setShowPlaylistManager] = useState(false);
+  const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false); // ADDED
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,15 +128,16 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
             </svg>
             Search
           </a>
-          <a 
-            href="/liked" 
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
+          {/* UPDATED: Liked Songs as popup trigger */}
+          <button 
+            onClick={() => setShowLikedSongsPopup(true)}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white text-left"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
             Liked Songs
-          </a>
+          </button>
         </nav>
         
         {/* User Info */}
@@ -215,7 +218,11 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         {/* Quick Actions */}
         <section className="mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
+            {/* UPDATED: Liked Songs opens popup */}
+            <button 
+              onClick={() => setShowLikedSongsPopup(true)}
+              className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform"
+            >
               <p className="font-semibold">Liked Songs</p>
               <p className="text-sm opacity-80 mt-1">
                 {isPremium ? 'Your saved tracks' : 'Preview your saves'}
@@ -374,6 +381,15 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           </div>
         </section>
       </main>
+
+      {/* ADDED: Liked Songs Popup */}
+      <LikedSongsPopup
+        isOpen={showLikedSongsPopup}
+        onClose={() => setShowLikedSongsPopup(false)}
+        playerReady={playerReady}
+        isPremium={isPremium}
+        playlists={playlists}
+      />
     </div>
   );
 }
