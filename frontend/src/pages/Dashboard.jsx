@@ -61,6 +61,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     fetchData();
   }, [setAccessToken, setIsPremium, setIsAuthenticated]);
 
+  // UPDATED: Play track with recent tracks context
   const playTrack = (track) => {
     if (!track) return;
     
@@ -71,7 +72,15 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
       isPremium
     });
     
-    playbackService.playTrack(track.uri, track.preview_url);
+    // Check if this is from recent tracks - provide context
+    const recentIndex = recent.findIndex(r => r.track?.id === track.id);
+    if (recentIndex !== -1) {
+      const trackUris = recent.map(r => r.track.uri);
+      playbackService.playTrack(track.uri, track.preview_url, trackUris, recentIndex);
+    } else {
+      // Single track
+      playbackService.playTrack(track.uri, track.preview_url);
+    }
   };
 
   const playPlaylist = (playlist, trackIndex = 0) => {

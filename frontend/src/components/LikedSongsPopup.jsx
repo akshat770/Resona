@@ -48,15 +48,26 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
     }
   };
 
-  const playTrack = async (track) => {
+  // UPDATED: Play individual track with queue context
+  const playTrack = async (track, trackIndex = null) => {
     if (!track) return;
     setCurrentlyPlaying(track);
-    await playbackService.playTrack(track.uri, track.preview_url);
+    
+    // If playing from the full list, provide queue context
+    if (trackIndex !== null) {
+      const trackUris = songs.map(item => item.track.uri);
+      await playbackService.playTrack(track.uri, track.preview_url, trackUris, trackIndex);
+    } else {
+      await playbackService.playTrack(track.uri, track.preview_url);
+    }
   };
 
+  // UPDATED: Play all liked songs with queue
   const playAllLikedSongs = async () => {
     if (songs.length > 0) {
-      await playTrack(songs[0].track);
+      const trackUris = songs.map(item => item.track.uri);
+      await playbackService.playTrack(songs[0].track.uri, songs[0].track.preview_url, trackUris, 0);
+      setCurrentlyPlaying(songs[0].track);
     }
   };
 
@@ -194,13 +205,14 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
 
               {/* Songs */}
               <div className="space-y-1">
+                {/* UPDATED: Pass index to playTrack */}
                 {songs.map((item, index) => (
                   <div
                     key={item.track.id}
                     className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-800 rounded-lg group transition-colors cursor-pointer ${
                       currentlyPlaying?.id === item.track.id ? 'bg-gray-800 border-l-4 border-green-400' : ''
                     }`}
-                    onClick={() => playTrack(item.track)}
+                    onClick={() => playTrack(item.track, index)}
                   >
                     <div className="col-span-1 flex items-center">
                       {currentlyPlaying?.id === item.track.id ? (
