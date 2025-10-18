@@ -81,6 +81,39 @@ router.post('/create-playlist', verifySpotifyToken, async (req, res) => {
   }
 });
 
+// ADDED: Update playlist
+router.put('/update-playlist/:playlistId', verifySpotifyToken, async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    const { name, description } = req.body;
+    
+    console.log('Updating playlist:', { playlistId, name, description });
+    
+    const data = await req.spotifyApi.changePlaylistDetails(playlistId, {
+      name,
+      description: description || ''
+    });
+    
+    res.json({ message: 'Playlist updated successfully' });
+  } catch (error) {
+    console.error('Error updating playlist:', error);
+    res.status(500).json({ error: 'Failed to update playlist' });
+  }
+});
+
+// ADDED: Unfollow playlist
+router.delete('/unfollow-playlist/:playlistId', verifySpotifyToken, async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    
+    await req.spotifyApi.unfollowPlaylist(playlistId);
+    res.json({ message: 'Playlist unfollowed successfully' });
+  } catch (error) {
+    console.error('Error unfollowing playlist:', error);
+    res.status(500).json({ error: 'Failed to unfollow playlist' });
+  }
+});
+
 // Add tracks to playlist
 router.post('/playlist/:id/tracks', verifySpotifyToken, async (req, res) => {
   try {
@@ -144,12 +177,14 @@ router.put('/liked-songs', verifySpotifyToken, async (req, res) => {
   }
 });
 
-// Remove track from liked songs
+// FIXED: Remove track from liked songs
 router.delete('/liked-songs', verifySpotifyToken, async (req, res) => {
   try {
     const { trackIds } = req.body; // Array of track IDs
+    console.log('Removing liked songs:', trackIds);
+    
     await req.spotifyApi.removeFromMySavedTracks(trackIds);
-    res.json({ success: true });
+    res.json({ success: true, message: 'Songs removed successfully' });
   } catch (error) {
     console.error('Error removing from liked songs:', error);
     res.status(500).json({ error: 'Failed to remove from liked songs' });
