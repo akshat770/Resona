@@ -16,6 +16,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [showPlaylistPopup, setShowPlaylistPopup] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Search functionality states
   const [showSearchUI, setShowSearchUI] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
 
@@ -25,6 +26,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
       if (!token) return window.location.href = "/";
 
       try {
+        // Decode JWT to extract access token
         const payload = JSON.parse(atob(token.split('.')[1]));
         const spotifyAccessToken = payload.accessToken;
         
@@ -32,17 +34,30 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         setIsAuthenticated(true);
         playbackService.setAccessToken(spotifyAccessToken);
 
-        await api.get("/auth/verify", { headers: { Authorization: `Bearer ${token}` } });
+        // Verify session
+        await api.get("/auth/verify", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const profileRes = await api.get("/spotify/profile", { headers: { Authorization: `Bearer ${token}` } });
+        // Fetch user profile
+        const profileRes = await api.get("/spotify/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUser(profileRes.data);
 
+        // Check if user has Premium
         setIsPremium(profileRes.data.product === 'premium');
 
-        const playlistsRes = await api.get("/spotify/user-playlists", { headers: { Authorization: `Bearer ${token}` } });
+        // Fetch playlists
+        const playlistsRes = await api.get("/spotify/user-playlists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setPlaylists(playlistsRes.data.items || []);
 
-        const recentRes = await api.get("/spotify/recent-tracks", { headers: { Authorization: `Bearer ${token}` } });
+        // Fetch recent tracks
+        const recentRes = await api.get("/spotify/recent-tracks", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setRecent(recentRes.data.items || []);
 
       } catch (err) {
@@ -58,11 +73,20 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const playTrack = (track) => {
     if (!track) return;
     
+    console.log('Playing track:', {
+      name: track.name,
+      uri: track.uri,
+      preview_url: track.preview_url,
+      isPremium
+    });
+    
+    // Check if this is from recent tracks - provide context
     const recentIndex = recent.findIndex(r => r.track?.id === track.id);
     if (recentIndex !== -1) {
       const trackUris = recent.map(r => r.track.uri);
       playbackService.playTrack(track.uri, track.preview_url, trackUris, recentIndex);
     } else {
+      // Single track
       playbackService.playTrack(track.uri, track.preview_url);
     }
   };
@@ -70,10 +94,18 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const playPlaylist = (playlist, trackIndex = 0) => {
     if (!playlist) return;
     
+    // Get first track's preview URL
     let firstTrackPreview = null;
     if (playlist.tracks?.items?.[trackIndex]?.track?.preview_url) {
       firstTrackPreview = playlist.tracks.items[trackIndex].track.preview_url;
     }
+    
+    console.log('Playing playlist:', {
+      name: playlist.name,
+      uri: playlist.uri,
+      preview_url: firstTrackPreview,
+      isPremium
+    });
     
     playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
   };
@@ -83,6 +115,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     setShowPlaylistPopup(true);
   };
 
+  // Search overlay render function
   const renderSearchOverlay = () => (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
       <div className="flex items-center p-4 border-b border-gray-700">
@@ -110,10 +143,10 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <div className="space-y-2">
                   {searchResults.tracks.items.map(track => (
                     <div key={track.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer">
-                      <img src={track.album.images[0]?.url} alt={track.name} className="w-10 h-10 rounded" />
+                      <img src={track.album?.images?.[0]?.url || "/placeholder.png"} alt={track.name} className="w-10 h-10 rounded" />
                       <div className="flex-1 min-w-0">
                         <div className="truncate">{track.name}</div>
-                        <div className="text-gray-400 text-sm truncate">{track.artists.map(a => a.name).join(", ")}</div>
+                        <div className="text-gray-400 text-sm truncate">{track.artists?.map(a => a.name).join(", ")}</div>
                       </div>
                       <button
                         title="Play"
@@ -148,7 +181,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <div className="flex flex-wrap gap-4">
                   {searchResults.albums.items.map(album => (
                     <div key={album.id} className="flex flex-col items-center w-28 cursor-pointer">
-                      <img src={album.images[0]?.url} alt={album.name} className="w-20 h-20 rounded mb-2" />
+                      <img src={album.images?.[0]?.url || "/placeholder.png"} alt={album.name} className="w-20 h-20 rounded mb-2" />
                       <div className="truncate text-xs text-white text-center">{album.name}</div>
                     </div>
                   ))}
@@ -161,14 +194,14 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <div className="flex flex-wrap gap-4">
                   {searchResults.playlists.items.map(playlist => (
                     <div key={playlist.id} className="flex flex-col items-center w-28 cursor-pointer">
-                      <img src={playlist.images?.[0]?.url} alt={playlist.name} className="w-20 h-20 rounded mb-2" />
+                      <img src={playlist.images?.[0]?.url || "/placeholder.png"} alt={playlist.name} className="w-20 h-20 rounded mb-2" />
                       <div className="truncate text-xs text-white text-center">{playlist.name}</div>
                     </div>
                   ))}
                 </div>
               </section>
             )}
-            {Object.values(searchResults).every(section => section.items.length === 0) && (
+            {searchResults && Object.values(searchResults).every(section => !section?.items?.length) && (
               <div className="text-gray-400 text-center mt-8">No results found</div>
             )}
           </>
@@ -176,6 +209,17 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
       </div>
     </div>
   );
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen text-white bg-gray-900">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading your music...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white pb-24 relative">
@@ -197,82 +241,152 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </div>
 
         <nav className="px-6 flex flex-col gap-4">
-          <a href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-700 text-white font-medium" onClick={() => setIsMobileMenuOpen(false)}>
+          <a 
+            href="/dashboard" 
+            className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-700 text-white font-medium"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
             Home
           </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white" onClick={() => setIsMobileMenuOpen(false)}>
+          <a 
+            href="#" 
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
             Search
           </a>
-          <button onClick={() => { setShowLikedSongsPopup(true); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white text-left">
+          <button 
+            onClick={() => {
+              setShowLikedSongsPopup(true);
+              setIsMobileMenuOpen(false);
+            }}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white text-left"
+          >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
             </svg>
             Liked Songs
           </button>
         </nav>
-
+        
+        {/* User Info */}
         <div className="mt-auto p-6 border-t border-gray-700">
           <div className="flex items-center gap-3">
-            {user?.images?.[0]?.url && <img src={user.images[0].url} alt="Profile" className="w-8 h-8 rounded-full" />}
+            {user?.images?.[0]?.url && (
+              <img 
+                src={user.images[0].url} 
+                alt="Profile" 
+                className="w-8 h-8 rounded-full"
+              />
+            )}
             <div>
-              <p className="text-sm font-medium text-white">{user?.display_name || user?.id || "User"}</p>
-              <p className="text-xs text-gray-400">{isPremium ? "Premium User" : "Free User (Preview Mode)"}</p>
+              <p className="text-sm font-medium text-white">
+                {user?.display_name || user?.id || "User"}
+              </p>
+              <p className="text-xs text-gray-400">
+                {isPremium ? 'Premium User' : 'Free User (Preview Mode)'}
+              </p>
             </div>
           </div>
         </div>
       </aside>
 
+      {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       )}
 
+      {/* MAIN CONTENT */}
       <main className="flex-1 lg:ml-0">
+        {/* UPDATED: Interactive Animated Hamburger Menu */}
         <div className="lg:hidden bg-gray-800 p-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-30">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="relative w-10 h-10 text-white focus:outline-none">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="relative w-10 h-10 text-white focus:outline-none"
+          >
             <span className="sr-only">Open main menu</span>
             <div className="block w-6 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <span aria-hidden="true" className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${isMobileMenuOpen ? "rotate-45" : "-translate-y-1.5"}`}></span>
-              <span aria-hidden="true" className={`block absolute h-0.5 w-6 bg-current transform transition duration-200 ease-in-out ${isMobileMenuOpen ? "opacity-0" : "opacity-100"}`}></span>
-              <span aria-hidden="true" className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${isMobileMenuOpen ? "-rotate-45" : "translate-y-1.5"}`}></span>
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${
+                  isMobileMenuOpen ? 'rotate-45' : '-translate-y-1.5'
+                }`}
+              ></span>
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-200 ease-in-out ${
+                  isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                }`}
+              ></span>
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${
+                  isMobileMenuOpen ? '-rotate-45' : 'translate-y-1.5'
+                }`}
+              ></span>
             </div>
           </button>
-          <button onClick={() => setShowSearchUI(true)} className="flex-1 mx-4 cursor-pointer bg-gray-700 border border-gray-600 rounded-full px-3 py-2 text-gray-400 text-left" style={{ minWidth: 0 }} title="Search">
-            <span className="truncate">Search Spotify...</span>
-          </button>
-          <div className={`w-2 h-2 rounded-full ${isPremium ? (playerReady ? "bg-green-400" : "bg-yellow-400") : "bg-blue-400"}`}></div>
+
+          {/* Search and Status */}
+          <div className="flex items-center gap-3 flex-1 justify-end">
+            <button
+              onClick={() => setShowSearchUI(true)}
+              className="bg-gray-700 border border-gray-600 rounded-full px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-32 text-sm cursor-pointer"
+            >
+              Search...
+            </button>
+            <div className={`w-2 h-2 rounded-full ${
+              isPremium 
+                ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+                : 'bg-blue-400'
+            }`}></div>
+          </div>
         </div>
 
+        {/* Keep all the rest of your existing content unchanged */}
         <div className="p-4 lg:p-8">
           {/* MOBILE-RESPONSIVE HEADER */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 gap-4">
             <div>
               <h2 className="text-2xl lg:text-3xl font-bold mb-2">
-                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, {user?.display_name || user?.id || "User"}
+                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.display_name || user?.id || "User"}
               </h2>
-              <p className="text-gray-400 text-sm lg:text-base">{isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}</p>
+              <p className="text-gray-400 text-sm lg:text-base">
+                {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
+              </p>
             </div>
+            
             <div className="flex items-center gap-3 lg:gap-4">
               {/* Player Status Indicator */}
               <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${isPremium ? (playerReady ? "bg-green-400" : "bg-yellow-400") : "bg-blue-400"}`}
-                ></div>
+                <div className={`w-2 h-2 rounded-full ${
+                  isPremium 
+                    ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+                    : 'bg-blue-400'
+                }`}></div>
                 <span className="text-xs lg:text-sm text-gray-400 hidden sm:block">
-                  {isPremium ? (playerReady ? "Premium Ready" : "Connecting...") : "Preview Mode"}
+                  {isPremium 
+                    ? (playerReady ? 'Premium Ready' : 'Connecting...')
+                    : 'Preview Mode'
+                  }
                 </span>
               </div>
-
-              <input
-                type="text"
-                placeholder="Search..."
-                className="bg-gray-800 border border-gray-700 rounded-full px-3 lg:px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-28 lg:w-64 text-sm"
-              />
+              
+              <button
+                onClick={() => setShowSearchUI(true)}
+                className="bg-gray-800 border border-gray-700 rounded-full px-3 lg:px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-28 lg:w-64 text-sm cursor-pointer text-left"
+              >
+                Search...
+              </button>
             </div>
           </div>
 
@@ -283,8 +397,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
                 <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
               </div>
-              <button
-                onClick={() => window.open("https://www.spotify.com/premium/", "_blank")}
+              <button 
+                onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
                 className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors self-start lg:self-auto"
               >
                 Upgrade
@@ -295,12 +409,14 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           {/* MOBILE-RESPONSIVE QUICK ACTIONS */}
           <section className="mb-6 lg:mb-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-              <button
+              <button 
                 onClick={() => setShowLikedSongsPopup(true)}
                 className="bg-gradient-to-br from-purple-600 to-blue-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform"
               >
                 <p className="font-semibold text-sm lg:text-base">Liked Songs</p>
-                <p className="text-xs lg:text-sm opacity-80 mt-1">{isPremium ? "Your saved tracks" : "Preview your saves"}</p>
+                <p className="text-xs lg:text-sm opacity-80 mt-1">
+                  {isPremium ? 'Your saved tracks' : 'Preview your saves'}
+                </p>
               </button>
               <button className="bg-gradient-to-br from-green-600 to-teal-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform">
                 <p className="font-semibold text-sm lg:text-base">Recently Played</p>
@@ -328,20 +444,34 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                   onClick={() => playTrack(r.track)}
                 >
                   <div className="relative">
-                    <img src={r.track?.album?.images?.[0]?.url || "/placeholder.png"} alt={r.track?.name || "Unknown"} className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover" />
+                    <img
+                      src={r.track?.album?.images?.[0]?.url || "/placeholder.png"}
+                      alt={r.track?.name || "Unknown"}
+                      className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover"
+                    />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 rounded-lg transition-all duration-200 flex items-center justify-center">
                       <div className="bg-green-500 text-black rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
                         <svg className="w-3 h-3 lg:w-4 lg:h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
+                          <path d="M8 5v14l11-7z"/>
                         </svg>
                       </div>
                     </div>
-                    {!isPremium && r.track?.preview_url && <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">30s</div>}
+                    {!isPremium && r.track?.preview_url && (
+                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                        30s
+                      </div>
+                    )}
                   </div>
                   <div className="overflow-hidden flex-1">
-                    <p className="font-semibold text-sm lg:text-base truncate text-white">{r.track?.name || "Unknown Track"}</p>
-                    <p className="text-gray-400 text-xs lg:text-sm truncate">{r.track?.artists?.map((a) => a.name).join(", ") || "Unknown Artist"}</p>
-                    {!isPremium && !r.track?.preview_url && <p className="text-red-400 text-xs mt-1">No preview</p>}
+                    <p className="font-semibold text-sm lg:text-base truncate text-white">
+                      {r.track?.name || "Unknown Track"}
+                    </p>
+                    <p className="text-gray-400 text-xs lg:text-sm truncate">
+                      {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
+                    </p>
+                    {!isPremium && !r.track?.preview_url && (
+                      <p className="text-red-400 text-xs mt-1">No preview</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -355,11 +485,11 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 playlists={playlists}
                 setPlaylists={setPlaylists}
                 onPlaylistSelect={(playlist) => {
-                  console.log("Selected playlist:", playlist);
+                  console.log('Selected playlist:', playlist);
                   setShowPlaylistManager(false);
                 }}
                 onCreatePlaylist={(playlist) => {
-                  console.log("Created playlist:", playlist);
+                  console.log('Created playlist:', playlist);
                 }}
               />
             </section>
@@ -373,18 +503,22 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 onClick={() => setShowPlaylistManager(!showPlaylistManager)}
                 className="bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors"
               >
-                {showPlaylistManager ? "Hide" : "Manage"}
+                {showPlaylistManager ? 'Hide' : 'Manage'}
               </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-6">
-              {playlists.map((pl) => (
+              {playlists.map(pl => (
                 <div
                   key={pl.id}
                   className="bg-gray-800 hover:bg-gray-750 active:bg-gray-700 p-3 lg:p-4 rounded-xl transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
                   onClick={() => openPlaylistPopup(pl)}
                 >
                   <div className="relative mb-3 lg:mb-4">
-                    <img src={pl.images?.[0]?.url || "/placeholder.png"} alt={pl.name} className="rounded-lg w-full aspect-square object-cover" />
+                    <img
+                      src={pl.images?.[0]?.url || "/placeholder.png"}
+                      alt={pl.name}
+                      className="rounded-lg w-full aspect-square object-cover"
+                    />
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -393,14 +527,20 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                       className="absolute bottom-1 right-1 lg:bottom-2 lg:right-2 bg-green-500 hover:bg-green-400 text-black rounded-full w-8 h-8 lg:w-12 lg:h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg transform translate-y-2 group-hover:translate-y-0"
                     >
                       <svg className="w-4 h-4 lg:w-6 lg:h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
+                        <path d="M8 5v14l11-7z"/>
                       </svg>
                     </button>
-                    {!isPremium && <div className="absolute top-1 left-1 lg:top-2 lg:left-2 bg-blue-500 text-white text-xs px-1 lg:px-2 py-0.5 lg:py-1 rounded">Preview</div>}
+                    {!isPremium && (
+                      <div className="absolute top-1 left-1 lg:top-2 lg:left-2 bg-blue-500 text-white text-xs px-1 lg:px-2 py-0.5 lg:py-1 rounded">
+                        Preview
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold truncate text-white mb-1 text-sm lg:text-base">{pl.name}</p>
-                    <p className="text-gray-400 text-xs lg:text-sm">{pl.tracks?.total || 0} songs</p>
+                    <p className="text-gray-400 text-xs lg:text-sm">
+                      {pl.tracks?.total || 0} songs
+                    </p>
                   </div>
                 </div>
               ))}
@@ -432,10 +572,27 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </div>
       </main>
 
-      <LikedSongsPopup isOpen={showLikedSongsPopup} onClose={() => setShowLikedSongsPopup(false)} playerReady={playerReady} isPremium={isPremium} playlists={playlists} />
+      {/* Popups */}
+      <LikedSongsPopup
+        isOpen={showLikedSongsPopup}
+        onClose={() => setShowLikedSongsPopup(false)}
+        playerReady={playerReady}
+        isPremium={isPremium}
+        playlists={playlists}
+      />
+      
+      <PlaylistPopup
+        isOpen={showPlaylistPopup}
+        onClose={() => {
+          setShowPlaylistPopup(false);
+          setSelectedPlaylist(null);
+        }}
+        playlist={selectedPlaylist}
+        playerReady={playerReady}
+        isPremium={isPremium}
+      />
 
-      <PlaylistPopup isOpen={showPlaylistPopup} onClose={() => { setShowPlaylistPopup(false); setSelectedPlaylist(null); }} playlist={selectedPlaylist} playerReady={playerReady} isPremium={isPremium} />
-
+      {/* Search Overlay */}
       {showSearchUI && renderSearchOverlay()}
     </div>
   );
