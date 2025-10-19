@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import LikedSongs from "./pages/LikedSongs";
 import { PlayerProvider } from "./context/PlayerContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SpotifyPlayer from "./components/SpotifyPlayer";
@@ -15,7 +14,6 @@ export default function App() {
   const [playerReady, setPlayerReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check for existing token on app load
   useEffect(() => {
     const token = localStorage.getItem("jwt");
     if (token) {
@@ -54,20 +52,6 @@ export default function App() {
                   isPremium={isPremium}
                   setAccessToken={setAccessToken}
                   setIsPremium={setIsPremium}
-                  setIsAuthenticated={setIsAuthenticated}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/liked"
-            element={
-              <ProtectedRoute>
-                <LikedSongs
-                  playerReady={playerReady}
-                  isPremium={isPremium}
-                  setIsPremium={setIsPremium}
-                  setAccessToken={setAccessToken}
                   setIsAuthenticated={setIsAuthenticated}
                 />
               </ProtectedRoute>
