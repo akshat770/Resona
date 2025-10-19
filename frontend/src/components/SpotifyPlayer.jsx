@@ -271,7 +271,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     });
   };
 
-  // Volume control functions
+  // FIXED: Volume control functions
   const handleVolumeChange = (newVolume) => {
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
@@ -378,8 +378,76 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             </div>
           </div>
           
-          {/* Action buttons */}
+          {/* ADDED: Mobile Action buttons with Volume */}
           <div className="flex items-center gap-1">
+            {/* Mobile Volume Control */}
+            <div className="relative" ref={volumeContainerRef}>
+              <button
+                onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                className="text-gray-400 hover:text-white p-2 rounded-full relative"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  {getVolumeIcon()}
+                </svg>
+                {/* Volume Level Indicator */}
+                <div className="absolute -top-1 -right-1">
+                  <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    volume > 0.7 ? 'bg-green-400' : 
+                    volume > 0.3 ? 'bg-yellow-400' : 
+                    volume > 0 ? 'bg-orange-400' : 'bg-red-400'
+                  }`}></div>
+                </div>
+              </button>
+
+              {/* ADDED: Mobile Volume Slider */}
+              {showVolumeSlider && (
+                <div className="absolute bottom-full right-0 mb-2 bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50 z-20">
+                  <div className="flex flex-col items-center gap-3">
+                    {/* Volume Percentage */}
+                    <div className="text-xs text-green-400 font-mono font-semibold">
+                      {Math.round(volume * 100)}%
+                    </div>
+                    
+                    {/* FIXED: Horizontal Slider for Mobile */}
+                    <div className="relative w-24 h-2 bg-gray-700 rounded-full">
+                      <div 
+                        className="absolute left-0 h-2 bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-200"
+                        style={{ width: `${volume * 100}%` }}
+                      >
+                        <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volume}
+                        onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Quick Volume Buttons */}
+                    <div className="flex gap-1">
+                      {[0, 0.3, 0.7, 1].map((level) => (
+                        <button
+                          key={level}
+                          onClick={() => handleVolumeChange(level)}
+                          className={`w-6 h-6 rounded text-xs font-mono transition-all duration-200 ${
+                            Math.abs(volume - level) < 0.1 
+                              ? 'bg-green-500 text-black shadow-lg' 
+                              : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                          }`}
+                        >
+                          {level === 0 ? '🔇' : Math.round(level * 100)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={toggleLiked}
               className={`p-2 rounded-full transition-colors ${
@@ -611,7 +679,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             </div>
           </div>
 
-          {/* Desktop Volume Control */}
+          {/* FIXED: Desktop Volume Control */}
           <div className="flex items-center gap-3 flex-1 justify-end relative">
             <div 
               ref={volumeContainerRef}
@@ -641,78 +709,80 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                 </div>
               </button>
 
-              {/* Persistent Volume Slider */}
-              <div className={`absolute bottom-full right-0 mb-2 transition-all duration-300 ${
-                showVolumeSlider ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-              }`}>
-                <div 
-                  className="bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50"
-                  onMouseEnter={() => setIsVolumeSliderActive(true)}
-                  onMouseLeave={() => setIsVolumeSliderActive(false)}
-                >
-                  <div className="flex flex-col items-center gap-3">
-                    {/* Volume Percentage */}
-                    <div className="text-xs text-green-400 font-mono font-semibold">
-                      {Math.round(volume * 100)}%
-                    </div>
-                    
-                    {/* Vertical Slider */}
-                    <div className="relative h-24 w-2 bg-gray-700 rounded-full">
-                      <div 
-                        className="absolute bottom-0 w-2 bg-gradient-to-t from-green-400 to-green-500 rounded-full transition-all duration-200"
-                        style={{ height: `${volume * 100}%` }}
-                      >
-                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
+              {/* FIXED: Desktop Volume Slider - Corrected Direction */}
+              {showVolumeSlider && (
+                <div className={`absolute bottom-full right-0 mb-2 transition-all duration-300 ${
+                  showVolumeSlider ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+                }`}>
+                  <div 
+                    className="bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50"
+                    onMouseEnter={() => setIsVolumeSliderActive(true)}
+                    onMouseLeave={() => setIsVolumeSliderActive(false)}
+                  >
+                    <div className="flex flex-col items-center gap-3">
+                      {/* Volume Percentage */}
+                      <div className="text-xs text-green-400 font-mono font-semibold">
+                        {Math.round(volume * 100)}%
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer rotate-180"
-                        style={{ 
-                          writingMode: 'bt-lr',
-                          WebkitAppearance: 'slider-vertical'
-                        }}
-                      />
-                    </div>
-
-                    {/* Volume Levels Visualization */}
-                    <div className="flex flex-col gap-1 items-center">
-                      {[0.8, 0.6, 0.4, 0.2].map((level) => (
-                        <div
-                          key={level}
-                          className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                            volume >= level ? 'bg-green-400 shadow-green-400/50' : 'bg-gray-600'
-                          }`}
+                      
+                      {/* FIXED: Vertical Slider - Correct Direction */}
+                      <div className="relative h-24 w-2 bg-gray-700 rounded-full">
+                        <div 
+                          className="absolute bottom-0 w-2 bg-gradient-to-t from-green-400 to-green-500 rounded-full transition-all duration-200"
+                          style={{ height: `${volume * 100}%` }}
+                        >
+                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={1 - volume} // FIXED: Inverted value for correct direction
+                          onChange={(e) => handleVolumeChange(1 - parseFloat(e.target.value))} // FIXED: Inverted onChange
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           style={{ 
-                            boxShadow: volume >= level ? '0 0 4px currentColor' : 'none'
+                            writingMode: 'bt-lr',
+                            WebkitAppearance: 'slider-vertical'
                           }}
                         />
-                      ))}
-                    </div>
+                      </div>
 
-                    {/* Quick Volume Buttons */}
-                    <div className="flex gap-1 mt-2">
-                      {[0, 0.3, 0.7, 1].map((level) => (
-                        <button
-                          key={level}
-                          onClick={() => handleVolumeChange(level)}
-                          className={`w-6 h-6 rounded text-xs font-mono transition-all duration-200 ${
-                            Math.abs(volume - level) < 0.1 
-                              ? 'bg-green-500 text-black shadow-lg' 
-                              : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                          }`}
-                        >
-                          {level === 0 ? '🔇' : Math.round(level * 100)}
-                        </button>
-                      ))}
+                      {/* Volume Levels Visualization */}
+                      <div className="flex flex-col gap-1 items-center">
+                        {[0.8, 0.6, 0.4, 0.2].map((level) => (
+                          <div
+                            key={level}
+                            className={`w-1 h-1 rounded-full transition-all duration-200 ${
+                              volume >= level ? 'bg-green-400 shadow-green-400/50' : 'bg-gray-600'
+                            }`}
+                            style={{ 
+                              boxShadow: volume >= level ? '0 0 4px currentColor' : 'none'
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Quick Volume Buttons */}
+                      <div className="flex gap-1 mt-2">
+                        {[0, 0.3, 0.7, 1].map((level) => (
+                          <button
+                            key={level}
+                            onClick={() => handleVolumeChange(level)}
+                            className={`w-6 h-6 rounded text-xs font-mono transition-all duration-200 ${
+                              Math.abs(volume - level) < 0.1 
+                                ? 'bg-green-500 text-black shadow-lg' 
+                                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                            }`}
+                          >
+                            {level === 0 ? '🔇' : Math.round(level * 100)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Sound Waves Animation */}

@@ -13,7 +13,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [showPlaylistPopup, setShowPlaylistPopup] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // MOBILE
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,20 +207,51 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
       {/* MAIN CONTENT */}
       <main className="flex-1 lg:ml-0">
-        {/* MOBILE TOP BAR */}
+        {/* UPDATED: Interactive Animated Hamburger Menu */}
         <div className="lg:hidden bg-gray-800 p-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-30">
           <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="text-white p-2 hover:bg-gray-700 rounded-lg"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="relative w-10 h-10 text-white focus:outline-none"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
-            </svg>
+            <span className="sr-only">Open main menu</span>
+            <div className="block w-6 absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${
+                  isMobileMenuOpen ? 'rotate-45' : '-translate-y-1.5'
+                }`}
+              ></span>
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-200 ease-in-out ${
+                  isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                }`}
+              ></span>
+              <span
+                aria-hidden="true"
+                className={`block absolute h-0.5 w-6 bg-current transform transition duration-300 ease-in-out ${
+                  isMobileMenuOpen ? '-rotate-45' : 'translate-y-1.5'
+                }`}
+              ></span>
+            </div>
           </button>
-          <h1 className="text-xl font-bold text-green-400">Resona</h1>
-          <div className="w-10"></div> {/* Spacer */}
+
+          {/* Search and Status */}
+          <div className="flex items-center gap-3 flex-1 justify-end">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="bg-gray-700 border border-gray-600 rounded-full px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-32 text-sm"
+            />
+            <div className={`w-2 h-2 rounded-full ${
+              isPremium 
+                ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+                : 'bg-blue-400'
+            }`}></div>
+          </div>
         </div>
 
+        {/* Keep all the rest of your existing content unchanged */}
         <div className="p-4 lg:p-8">
           {/* MOBILE-RESPONSIVE HEADER */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 gap-4">
