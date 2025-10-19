@@ -14,7 +14,7 @@ export default function SearchBar({ onResults, autoFocus }) {
     setLoading(true);
     try {
       const token = localStorage.getItem("jwt");
-      const res = await api.get("/search", {
+      const res = await api.get("/spotify/search", {
         headers: { Authorization: `Bearer ${token}` },
         params: { q, type: "track,artist,album,playlist" },
       });
