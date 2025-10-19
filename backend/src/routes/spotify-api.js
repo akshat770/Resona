@@ -230,16 +230,18 @@ router.get('/check-liked/:trackId', verifySpotifyToken, async (req, res) => {
   }
 });
 
-// Search tracks
+// Search tracks, albums, artists, playlists
 router.get('/search', verifySpotifyToken, async (req, res) => {
   try {
-    const { q, type = 'track', limit = 20 } = req.query;
-    const data = await req.spotifyApi.search(q, [type], { limit: parseInt(limit) });
-    res.json(data.body);
+    const { q, type = 'track,album,artist,playlist', limit = 8 } = req.query;
+    // type can be 'track,artist,album,playlist'
+    const data = await req.spotifyApi.search(q, type.split(','), { limit: parseInt(limit) });
+    res.json(data.body); // data.body will include tracks, artists, albums, playlists (if type includes them)
   } catch (error) {
     console.error('Error searching:', error);
     res.status(500).json({ error: 'Failed to search' });
   }
 });
+
 
 module.exports = router;
