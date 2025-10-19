@@ -7,22 +7,29 @@ export default function SearchBar({ onResults, autoFocus }) {
   const debounceTimeout = useRef();
 
   const performSearch = async (q) => {
-    if (!q) {
+    if (!q || q.trim() === '') {
       onResults(null);
       return;
     }
+    
     setLoading(true);
     try {
       const token = localStorage.getItem("jwt");
+      console.log("Searching for:", q); // Debug log
+      
       const res = await api.get("/spotify/search", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { q, type: "track,artist,album,playlist" },
+        params: { q: q.trim(), type: "track,artist,album,playlist" },
       });
+      
+      console.log("Search results:", res.data); // Debug log
       onResults(res.data);
-    } catch {
+    } catch (error) {
+      console.error("Search error:", error); // Debug log
       onResults(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const onChange = (e) => {

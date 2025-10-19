@@ -234,14 +234,38 @@ router.get('/check-liked/:trackId', verifySpotifyToken, async (req, res) => {
 router.get('/search', verifySpotifyToken, async (req, res) => {
   try {
     const { q, type = 'track,album,artist,playlist', limit = 8 } = req.query;
-    // type can be 'track,artist,album,playlist'
-    const data = await req.spotifyApi.search(q, type.split(','), { limit: parseInt(limit) });
-    res.json(data.body); // data.body will include tracks, artists, albums, playlists (if type includes them)
+    
+    if (!q || q.trim() === '') {
+      return res.json({ tracks: { items: [] }, artists: { items: [] }, albums: { items: [] }, playlists: { items: [] } });
+    }
+    
+    console.log('Searching for:', q, 'types:', type); // Debug log
+    
+    const data = await req.spotifyApi.search(q.trim(), type.split(','), { limit: parseInt(limit) });
+    
+    // Filter out null/undefined items and ensure proper structure
+    const cleanedResults = {
+      tracks: {
+        items: (data.body.tracks?.items || []).filter(item => item && item.id)
+      },
+      artists: {
+        items: (data.body.artists?.items || []).filter(item => item && item.id)
+      },
+      albums: {
+        items: (data.body.albums?.items || []).filter(item => item && item.id)
+      },
+      playlists: {
+        items: (data.body.playlists?.items || []).filter(item => item && item.id)
+      }
+    };
+    console.log('Cleaned search results:', cleanedResults); // Debug log
+    res.json(cleanedResults);
   } catch (error) {
     console.error('Error searching:', error);
-    res.status(500).json({ error: 'Failed to search' });
+    res.status(500).json({ error: 'Failed to search', details: error.message });
   }
 });
+
 
 
 module.exports = router;
