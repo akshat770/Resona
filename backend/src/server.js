@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const spotifyApiRoutes = require("./routes/spotify-api"); // New routes
-
 const app = express();
 
 // DB Connection
