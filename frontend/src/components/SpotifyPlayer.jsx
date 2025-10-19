@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../api/axios';
+import { useToast } from './ToastProvider';
 
 export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const [player, setPlayer] = useState(null);
@@ -21,6 +22,9 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
   const volumeContainerRef = useRef(null);
   const addToMenuRef = useRef(null);
   const progressIntervalRef = useRef(null);
+
+  // Toast functionality
+  const { showToast } = useToast();
 
   // Fetch playlists and check liked status when track changes
   useEffect(() => {
@@ -188,7 +192,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     }
   };
 
-  // Toggle liked status
+  // Toggle liked status with toast
   const toggleLiked = async () => {
     if (!currentTrack) return;
     const token = localStorage.getItem("jwt");
@@ -200,6 +204,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
           data: { trackIds: [currentTrack.id] }
         });
         setIsLiked(false);
+        showToast(`Removed "${currentTrack.name}" from Liked Songs`, "success");
       } else {
         await api.put("/spotify/liked-songs", {
           trackIds: [currentTrack.id]
@@ -207,13 +212,15 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
           headers: { Authorization: `Bearer ${token}` }
         });
         setIsLiked(true);
+        showToast(`Added "${currentTrack.name}" to Liked Songs`, "heart");
       }
     } catch (error) {
       console.error("Error toggling liked:", error);
+      showToast("Failed to update Liked Songs", "error");
     }
   };
 
-  // Add to playlist function
+  // Add to playlist function with toast
   const addToPlaylist = async (playlistId) => {
     if (!currentTrack) return;
     const token = localStorage.getItem("jwt");
@@ -224,11 +231,13 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Song added to playlist!");
+      
+      const playlist = playlists.find(p => p.id === playlistId);
+      showToast(`Added "${currentTrack.name}" to ${playlist?.name || 'playlist'}`, "success");
       setShowAddToMenu(false);
     } catch (error) {
       console.error("Error adding to playlist:", error);
-      alert("Failed to add to playlist");
+      showToast("Failed to add to playlist", "error");
     }
   };
 

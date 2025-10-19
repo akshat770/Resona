@@ -6,6 +6,7 @@ import LikedSongsPopup from "../components/LikedSongsPopup";
 import PlaylistPopup from "../components/PlaylistPopup";
 import SearchBar from "../components/SearchBar";
 import { useToast } from "../components/ToastProvider";
+import AddToPlaylistPopup from "../components/AddToPlaylistPopup";
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
@@ -16,6 +17,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [showPlaylistPopup, setShowPlaylistPopup] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAddToPlaylistPopup, setShowAddToPlaylistPopup] = useState(false);
+  const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
 
   // Search functionality states
   const [showSearchUI, setShowSearchUI] = useState(false);
@@ -23,6 +26,11 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
   // Toast functionality
   const { showToast } = useToast();
+
+  const handleAddToPlaylist = (track) => {
+    setSelectedTrackForPlaylist(track);
+    setShowAddToPlaylistPopup(true);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -182,24 +190,35 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                         <div className="truncate">{track.name || "Unknown Track"}</div>
                         <div className="text-gray-400 text-sm truncate">{track.artists?.map(a => a.name).join(", ") || "Unknown Artist"}</div>
                       </div>
-                      <button
-                        title="Add to Liked Songs"
-                        className="p-2 rounded-full hover:bg-green-400/30"
-                        onClick={() => addToLikedSongs(track.id, track.name)}
-                      >
-                        <svg className="w-4 h-4 text-gray-400 hover:text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                        </svg>
-                      </button>
-                      <button
-                        title="Play"
-                        className="p-2 rounded-full hover:bg-green-400/30"
-                        onClick={() => playTrack({ ...track, preview_url: track.preview_url })}
-                      >
-                        <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          title="Add to Liked Songs"
+                          className="p-2 rounded-full hover:bg-green-400/30"
+                          onClick={() => addToLikedSongs(track.id, track.name)}
+                        >
+                          <svg className="w-4 h-4 text-gray-400 hover:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                          </svg>
+                        </button>
+                        <button
+                          title="Add to Playlist"
+                          className="p-2 rounded-full hover:bg-gray-400/30"
+                          onClick={() => handleAddToPlaylist(track)}
+                        >
+                          <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                          </svg>
+                        </button>
+                        <button
+                          title="Play"
+                          className="p-2 rounded-full hover:bg-green-400/30"
+                          onClick={() => playTrack({ ...track, preview_url: track.preview_url })}
+                        >
+                          <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -627,6 +646,17 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
       {/* Search Overlay */}
       {showSearchUI && renderSearchOverlay()}
+
+      {/* Add to Playlist Popup */}
+      <AddToPlaylistPopup
+        isOpen={showAddToPlaylistPopup}
+        onClose={() => {
+          setShowAddToPlaylistPopup(false);
+          setSelectedTrackForPlaylist(null);
+        }}
+        track={selectedTrackForPlaylist}
+        playlists={playlists}
+      />
     </div>
   );
 }
