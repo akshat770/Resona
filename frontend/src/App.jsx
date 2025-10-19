@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import SpotifyPlayer from "./components/SpotifyPlayer";
 import PreviewPlayer from "./components/PreviewPlayer";
 import playbackService from "./services/playbackService";
+import ToastProvider from "./components/ToastProvider";
 
 export default function App() {
   const [accessToken, setAccessToken] = useState(null);
@@ -30,47 +31,47 @@ export default function App() {
     }
   }, []);
 
-  // Handle player ready - single instance for entire app
   const handlePlayerReady = (deviceId) => {
     console.log('Global player ready with device ID:', deviceId);
     playbackService.setDeviceId(deviceId);
     setPlayerReady(true);
-    setIsPremium(true); // If web player works, user has Premium
+    setIsPremium(true);
   };
 
   return (
-    <PlayerProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard
-                  playerReady={playerReady}
-                  isPremium={isPremium}
-                  setAccessToken={setAccessToken}
-                  setIsPremium={setIsPremium}
-                  setIsAuthenticated={setIsAuthenticated}
-                />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-
-        {/* Single Shared Player for Entire App */}
-        {accessToken && isAuthenticated && (
-          isPremium ? (
-            <SpotifyPlayer
-              accessToken={accessToken}
-              onPlayerReady={handlePlayerReady}
+    <ToastProvider>
+      <PlayerProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard
+                    playerReady={playerReady}
+                    isPremium={isPremium}
+                    setAccessToken={setAccessToken}
+                    setIsPremium={setIsPremium}
+                    setIsAuthenticated={setIsAuthenticated}
+                  />
+                </ProtectedRoute>
+              }
             />
-          ) : (
-            <PreviewPlayer />
-          )
-        )}
-      </BrowserRouter>
-    </PlayerProvider>
+          </Routes>
+
+          {accessToken && isAuthenticated && (
+            isPremium ? (
+              <SpotifyPlayer
+                accessToken={accessToken}
+                onPlayerReady={handlePlayerReady}
+              />
+            ) : (
+              <PreviewPlayer />
+            )
+          )}
+        </BrowserRouter>
+      </PlayerProvider>
+    </ToastProvider>
   );
 }
