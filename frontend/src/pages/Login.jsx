@@ -49,9 +49,7 @@ export default function Login() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // -------------------
   // Glow effect follows mouse
-  // -------------------
   useEffect(() => {
     const glow = glowRef.current;
     if (!glow) return;
@@ -75,13 +73,19 @@ export default function Login() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
-  // -------------------
-  // Custom cursor
-  // -------------------
+  // Custom cursor (only on desktop)
   useEffect(() => {
     const dot = cursorDotRef.current;
     const ring = cursorRingRef.current;
     if (!dot || !ring) return;
+
+    // Hide on mobile
+    const isMobile = window.matchMedia("(max-width: 1024px)").matches;
+    if (isMobile) {
+      dot.style.display = 'none';
+      ring.style.display = 'none';
+      return;
+    }
 
     let x = window.innerWidth / 2,
       y = window.innerHeight / 2,
@@ -120,34 +124,34 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white cursor-none">
+    <div className="relative min-h-screen overflow-hidden bg-black text-white lg:cursor-none">
       {/* Canvas background */}
       <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full z-0" />
 
-      {/* Glow and custom cursor */}
+      {/* Glow and custom cursor (desktop only) */}
       <div
         ref={cursorRingRef}
-        className="pointer-events-none fixed w-8 h-8 rounded-full border border-white/30 mix-blend-screen"
+        className="pointer-events-none fixed w-8 h-8 rounded-full border border-white/30 mix-blend-screen hidden lg:block"
         style={{ boxShadow: "0 0 24px rgba(34,197,94,0.25)" }}
       />
       <div
         ref={cursorDotRef}
-        className="pointer-events-none fixed w-2 h-2 rounded-full bg-green-400 mix-blend-screen"
+        className="pointer-events-none fixed w-2 h-2 rounded-full bg-green-400 mix-blend-screen hidden lg:block"
       />
       <div
         ref={glowRef}
-        className="pointer-events-none fixed w-[220px] h-[220px] rounded-full blur-2xl opacity-35"
+        className="pointer-events-none fixed w-[220px] h-[220px] rounded-full blur-2xl opacity-35 hidden lg:block"
         style={{
           background:
             "radial-gradient(circle, rgba(34,197,94,0.5) 0%, rgba(34,197,94,0.15) 45%, transparent 70%)",
         }}
       />
 
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-6">
-        <div className="w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-10 shadow-xl text-center">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 lg:px-6">
+        <div className="w-full max-w-md lg:max-w-xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 lg:p-10 shadow-xl text-center">
           {/* Custom Logo with animated arcs */}
           <div className="flex justify-center mb-6">
-            <svg width="80" height="80" viewBox="0 0 100 100" fill="none">
+            <svg width="60" height="60" className="lg:w-20 lg:h-20" viewBox="0 0 100 100" fill="none">
               {/* Outer circle */}
               <circle cx="50" cy="50" r="48" stroke="rgba(34,197,94,0.7)" strokeWidth="3" />
 
@@ -223,15 +227,15 @@ export default function Login() {
             </svg>
           </div>
 
-          <h1 className="text-4xl font-extrabold mb-6">Resona</h1>
-          <p className="text-white/70 mb-10">Your AI-powered Spotify companion</p>
+          <h1 className="text-3xl lg:text-4xl font-extrabold mb-4 lg:mb-6">Resona</h1>
+          <p className="text-white/70 mb-8 lg:mb-10 text-sm lg:text-base">Your AI-powered Spotify companion</p>
 
           {/* Spotify login button */}
           <a
             href={`${backendURL}/auth/spotify`}
-            className="inline-flex items-center gap-3 rounded-xl bg-green-500 hover:bg-green-400 text-black font-semibold px-6 py-3 transition-all shadow-lg shadow-green-500/20"
+            className="inline-flex items-center gap-3 rounded-xl bg-green-500 hover:bg-green-400 active:bg-green-600 text-black font-semibold px-6 py-3 transition-all shadow-lg shadow-green-500/20 active:scale-95 text-sm lg:text-base"
           >
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-5 h-5 lg:w-6 lg:h-6" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 6.64 5.37 12 12 12s12-5.36 12-12c0-6.63-5.37-12-12-12zm5.42 17.54c-.22.36-.68.47-1.04.26-2.84-1.73-6.42-2.12-10.64-1.16-.41.09-.82-.17-.91-.59-.09-.42.17-.82.59-.91 4.6-1.02 8.55-.58 11.7 1.34.36.21.47.68.26 1.06zm1.48-3.29c-.28.46-.88.6-1.34.32-3.25-1.98-8.21-2.55-12.05-1.39-.52.16-1.08-.13-1.24-.65-.16-.52.13-1.08.65-1.24 4.32-1.34 9.77-.72 13.48 1.59.46.28.6.88.32 1.37zm.13-3.39c-3.89-2.31-10.33-2.52-14.04-1.37-.63.2-1.29-.15-1.48-.78-.2-.63.15-1.29.78-1.48 4.27-1.34 11.38-1.09 15.83 1.55.57.34.75 1.08.41 1.66-.34.57-1.08.75-1.66.41z" />
             </svg>
             Login with Spotify

@@ -2,17 +2,18 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
 import PlaylistManager from "../components/PlaylistManager";
-import LikedSongsPopup from "../components/LikedSongsPopup"; // ADDED
-import PlaylistPopup from "../components/PlaylistPopup"; // ADDED
+import LikedSongsPopup from "../components/LikedSongsPopup";
+import PlaylistPopup from "../components/PlaylistPopup";
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
   const [showPlaylistManager, setShowPlaylistManager] = useState(false);
-  const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false); // ADDED
-  const [selectedPlaylist, setSelectedPlaylist] = useState(null); // ADDED
-  const [showPlaylistPopup, setShowPlaylistPopup] = useState(false); // ADDED
+  const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [showPlaylistPopup, setShowPlaylistPopup] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // MOBILE
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +65,6 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     fetchData();
   }, [setAccessToken, setIsPremium, setIsAuthenticated]);
 
-  // UPDATED: Play track with recent tracks context
   const playTrack = (track) => {
     if (!track) return;
     
@@ -105,7 +105,6 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     playbackService.playPlaylist(playlist.uri, trackIndex, firstTrackPreview);
   };
 
-  // ADDED: Open playlist popup
   const openPlaylistPopup = (playlist) => {
     setSelectedPlaylist(playlist);
     setShowPlaylistPopup(true);
@@ -123,14 +122,29 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white pb-24">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 p-6 flex flex-col border-r border-gray-700">
-        <h1 className="text-2xl font-bold mb-8 text-green-400">Resona</h1>
-        <nav className="flex flex-col gap-4">
+    <div className="flex min-h-screen bg-gray-900 text-white pb-24 relative">
+      {/* MOBILE-RESPONSIVE SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 transform transition-transform duration-300 ease-in-out ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:static lg:inset-0 border-r border-gray-700`}>
+        <div className="flex items-center justify-between p-6 lg:justify-start">
+          <h1 className="text-2xl font-bold text-green-400">Resona</h1>
+          {/* Mobile close button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700"
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+
+        <nav className="px-6 flex flex-col gap-4">
           <a 
             href="/dashboard" 
             className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-700 text-white font-medium"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
@@ -140,15 +154,18 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           <a 
             href="#" 
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
             Search
           </a>
-          {/* UPDATED: Liked Songs as popup trigger */}
           <button 
-            onClick={() => setShowLikedSongsPopup(true)}
+            onClick={() => {
+              setShowLikedSongsPopup(true);
+              setIsMobileMenuOpen(false);
+            }}
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors text-gray-300 hover:text-white text-left"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -159,9 +176,9 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </nav>
         
         {/* User Info */}
-        <div className="mt-auto pt-6 border-t border-gray-700">
+        <div className="mt-auto p-6 border-t border-gray-700">
           <div className="flex items-center gap-3">
-            {user.images?.[0]?.url && (
+            {user?.images?.[0]?.url && (
               <img 
                 src={user.images[0].url} 
                 alt="Profile" 
@@ -170,7 +187,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
             )}
             <div>
               <p className="text-sm font-medium text-white">
-                {user.display_name || user.id || "User"}
+                {user?.display_name || user?.id || "User"}
               </p>
               <p className="text-xs text-gray-400">
                 {isPremium ? 'Premium User' : 'Free User (Preview Mode)'}
@@ -180,228 +197,249 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">
-              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user.display_name || user.id || "User"}
-            </h2>
-            <p className="text-gray-400">
-              {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Player Status Indicator */}
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                isPremium 
-                  ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
-                  : 'bg-blue-400'
-              }`}></div>
-              <span className="text-sm text-gray-400">
-                {isPremium 
-                  ? (playerReady ? 'Premium Player Ready' : 'Connecting...')
-                  : 'Preview Mode'
-                }
-              </span>
-            </div>
-            
-            <input
-              type="text"
-              placeholder="Search songs, artists..."
-              className="bg-gray-800 border border-gray-700 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-64"
-            />
-          </div>
+      {/* MOBILE OVERLAY */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 lg:ml-0">
+        {/* MOBILE TOP BAR */}
+        <div className="lg:hidden bg-gray-800 p-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-30">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="text-white p-2 hover:bg-gray-700 rounded-lg"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          <h1 className="text-xl font-bold text-green-400">Resona</h1>
+          <div className="w-10"></div> {/* Spacer */}
         </div>
 
-        {/* Premium Upgrade Banner for Free Users */}
-        {!isPremium && (
-          <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 rounded-xl mb-8 flex items-center justify-between">
+        <div className="p-4 lg:p-8">
+          {/* MOBILE-RESPONSIVE HEADER */}
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 lg:mb-8 gap-4">
             <div>
-              <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
-              <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
-            </div>
-            <button 
-              onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
-              className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Upgrade
-            </button>
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        <section className="mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* UPDATED: Liked Songs opens popup */}
-            <button 
-              onClick={() => setShowLikedSongsPopup(true)}
-              className="bg-gradient-to-br from-purple-600 to-blue-600 p-4 rounded-xl text-left hover:scale-105 transition-transform"
-            >
-              <p className="font-semibold">Liked Songs</p>
-              <p className="text-sm opacity-80 mt-1">
-                {isPremium ? 'Your saved tracks' : 'Preview your saves'}
+              <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+                Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.display_name || user?.id || "User"}
+              </h2>
+              <p className="text-gray-400 text-sm lg:text-base">
+                {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
               </p>
-            </button>
-            <button className="bg-gradient-to-br from-green-600 to-teal-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
-              <p className="font-semibold">Recently Played</p>
-              <p className="text-sm opacity-80 mt-1">Jump back in</p>
-            </button>
-            <button className="bg-gradient-to-br from-orange-600 to-red-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
-              <p className="font-semibold">Discover</p>
-              <p className="text-sm opacity-80 mt-1">New releases</p>
-            </button>
-            <button className="bg-gradient-to-br from-pink-600 to-purple-600 p-4 rounded-xl text-left hover:scale-105 transition-transform">
-              <p className="font-semibold">AI Playlist</p>
-              <p className="text-sm opacity-80 mt-1">Smart curation</p>
-            </button>
+            </div>
+            
+            <div className="flex items-center gap-3 lg:gap-4">
+              {/* Player Status Indicator */}
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  isPremium 
+                    ? (playerReady ? 'bg-green-400' : 'bg-yellow-400')
+                    : 'bg-blue-400'
+                }`}></div>
+                <span className="text-xs lg:text-sm text-gray-400 hidden sm:block">
+                  {isPremium 
+                    ? (playerReady ? 'Premium Ready' : 'Connecting...')
+                    : 'Preview Mode'
+                  }
+                </span>
+              </div>
+              
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-gray-800 border border-gray-700 rounded-full px-3 lg:px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-28 lg:w-64 text-sm"
+              />
+            </div>
           </div>
-        </section>
 
-        {/* Recently Played */}
-        <section className="mb-8">
-          <h3 className="text-xl font-semibold mb-6">Recently Played</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recent.slice(0, 6).map((r, index) => (
-              <div
-                key={r.track?.id || index}
-                className="bg-gray-800 hover:bg-gray-700 p-4 rounded-xl flex items-center gap-4 transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
-                onClick={() => playTrack(r.track)}
+          {/* Premium Upgrade Banner */}
+          {!isPremium && (
+            <div className="bg-gradient-to-r from-green-600 to-green-500 p-4 rounded-xl mb-6 lg:mb-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-white">Upgrade to Spotify Premium</h3>
+                <p className="text-green-100 text-sm">Get unlimited skips, no ads, and full track playback</p>
+              </div>
+              <button 
+                onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
+                className="bg-white text-green-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition-colors self-start lg:self-auto"
               >
-                <div className="relative">
-                  <img
-                    src={r.track?.album?.images?.[0]?.url || "/placeholder.png"}
-                    alt={r.track?.name || "Unknown"}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-lg transition-all duration-200 flex items-center justify-center">
-                    <div className="bg-green-500 text-black rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-lg">
-                      <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                Upgrade
+              </button>
+            </div>
+          )}
+
+          {/* MOBILE-RESPONSIVE QUICK ACTIONS */}
+          <section className="mb-6 lg:mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              <button 
+                onClick={() => setShowLikedSongsPopup(true)}
+                className="bg-gradient-to-br from-purple-600 to-blue-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform"
+              >
+                <p className="font-semibold text-sm lg:text-base">Liked Songs</p>
+                <p className="text-xs lg:text-sm opacity-80 mt-1">
+                  {isPremium ? 'Your saved tracks' : 'Preview your saves'}
+                </p>
+              </button>
+              <button className="bg-gradient-to-br from-green-600 to-teal-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform">
+                <p className="font-semibold text-sm lg:text-base">Recently Played</p>
+                <p className="text-xs lg:text-sm opacity-80 mt-1">Jump back in</p>
+              </button>
+              <button className="bg-gradient-to-br from-orange-600 to-red-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform">
+                <p className="font-semibold text-sm lg:text-base">Discover</p>
+                <p className="text-xs lg:text-sm opacity-80 mt-1">New releases</p>
+              </button>
+              <button className="bg-gradient-to-br from-pink-600 to-purple-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform">
+                <p className="font-semibold text-sm lg:text-base">AI Playlist</p>
+                <p className="text-xs lg:text-sm opacity-80 mt-1">Smart curation</p>
+              </button>
+            </div>
+          </section>
+
+          {/* MOBILE-RESPONSIVE RECENTLY PLAYED */}
+          <section className="mb-6 lg:mb-8">
+            <h3 className="text-lg lg:text-xl font-semibold mb-4 lg:mb-6">Recently Played</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+              {recent.slice(0, 6).map((r, index) => (
+                <div
+                  key={r.track?.id || index}
+                  className="bg-gray-800 hover:bg-gray-700 active:bg-gray-750 p-3 lg:p-4 rounded-xl flex items-center gap-3 lg:gap-4 transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
+                  onClick={() => playTrack(r.track)}
+                >
+                  <div className="relative">
+                    <img
+                      src={r.track?.album?.images?.[0]?.url || "/placeholder.png"}
+                      alt={r.track?.name || "Unknown"}
+                      className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 rounded-lg transition-all duration-200 flex items-center justify-center">
+                      <div className="bg-green-500 text-black rounded-full w-6 h-6 lg:w-8 lg:h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
+                        <svg className="w-3 h-3 lg:w-4 lg:h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {!isPremium && r.track?.preview_url && (
+                      <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
+                        30s
+                      </div>
+                    )}
+                  </div>
+                  <div className="overflow-hidden flex-1">
+                    <p className="font-semibold text-sm lg:text-base truncate text-white">
+                      {r.track?.name || "Unknown Track"}
+                    </p>
+                    <p className="text-gray-400 text-xs lg:text-sm truncate">
+                      {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
+                    </p>
+                    {!isPremium && !r.track?.preview_url && (
+                      <p className="text-red-400 text-xs mt-1">No preview</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Playlist Manager */}
+          {showPlaylistManager && (
+            <section className="mb-6 lg:mb-8">
+              <PlaylistManager
+                playlists={playlists}
+                setPlaylists={setPlaylists}
+                onPlaylistSelect={(playlist) => {
+                  console.log('Selected playlist:', playlist);
+                  setShowPlaylistManager(false);
+                }}
+                onCreatePlaylist={(playlist) => {
+                  console.log('Created playlist:', playlist);
+                }}
+              />
+            </section>
+          )}
+
+          {/* MOBILE-RESPONSIVE PLAYLISTS */}
+          <section className="mb-6 lg:mb-8">
+            <div className="flex items-center justify-between mb-4 lg:mb-6">
+              <h3 className="text-lg lg:text-xl font-semibold">Your Playlists</h3>
+              <button
+                onClick={() => setShowPlaylistManager(!showPlaylistManager)}
+                className="bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors"
+              >
+                {showPlaylistManager ? 'Hide' : 'Manage'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-6">
+              {playlists.map(pl => (
+                <div
+                  key={pl.id}
+                  className="bg-gray-800 hover:bg-gray-750 active:bg-gray-700 p-3 lg:p-4 rounded-xl transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
+                  onClick={() => openPlaylistPopup(pl)}
+                >
+                  <div className="relative mb-3 lg:mb-4">
+                    <img
+                      src={pl.images?.[0]?.url || "/placeholder.png"}
+                      alt={pl.name}
+                      className="rounded-lg w-full aspect-square object-cover"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playPlaylist(pl);
+                      }}
+                      className="absolute bottom-1 right-1 lg:bottom-2 lg:right-2 bg-green-500 hover:bg-green-400 text-black rounded-full w-8 h-8 lg:w-12 lg:h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg transform translate-y-2 group-hover:translate-y-0"
+                    >
+                      <svg className="w-4 h-4 lg:w-6 lg:h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                       </svg>
-                    </div>
+                    </button>
+                    {!isPremium && (
+                      <div className="absolute top-1 left-1 lg:top-2 lg:left-2 bg-blue-500 text-white text-xs px-1 lg:px-2 py-0.5 lg:py-1 rounded">
+                        Preview
+                      </div>
+                    )}
                   </div>
-                  {/* Preview indicator for non-premium */}
-                  {!isPremium && r.track?.preview_url && (
-                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded">
-                      30s
-                    </div>
-                  )}
+                  <div>
+                    <p className="font-semibold truncate text-white mb-1 text-sm lg:text-base">{pl.name}</p>
+                    <p className="text-gray-400 text-xs lg:text-sm">
+                      {pl.tracks?.total || 0} songs
+                    </p>
+                  </div>
                 </div>
-                <div className="overflow-hidden flex-1">
-                  <p className="font-semibold text-sm truncate text-white">
-                    {r.track?.name || "Unknown Track"}
-                  </p>
-                  <p className="text-gray-400 text-xs truncate">
-                    {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
-                  </p>
-                  {!isPremium && !r.track?.preview_url && (
-                    <p className="text-red-400 text-xs mt-1">No preview available</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Playlist Manager */}
-        {showPlaylistManager && (
-          <section className="mb-8">
-            <PlaylistManager
-              playlists={playlists}
-              setPlaylists={setPlaylists}
-              onPlaylistSelect={(playlist) => {
-                console.log('Selected playlist:', playlist);
-                setShowPlaylistManager(false);
-              }}
-              onCreatePlaylist={(playlist) => {
-                console.log('Created playlist:', playlist);
-              }}
-            />
+              ))}
+            </div>
           </section>
-        )}
 
-        {/* Playlists with preview indicators */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold">Your Playlists</h3>
-            <button
-              onClick={() => setShowPlaylistManager(!showPlaylistManager)}
-              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              {showPlaylistManager ? 'Hide Manager' : 'Manage Playlists'}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-            {playlists.map(pl => (
-              <div
-                key={pl.id}
-                className="bg-gray-800 hover:bg-gray-750 p-4 rounded-xl transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600"
-                onClick={() => openPlaylistPopup(pl)} // UPDATED: Open popup instead of playing
-              >
-                <div className="relative mb-4">
-                  <img
-                    src={pl.images?.[0]?.url || "/placeholder.png"}
-                    alt={pl.name}
-                    className="rounded-lg w-full aspect-square object-cover"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playPlaylist(pl);
-                    }}
-                    className="absolute bottom-2 right-2 bg-green-500 hover:bg-green-400 text-black rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 shadow-lg transform translate-y-2 group-hover:translate-y-0"
-                  >
-                    <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </button>
-                  {/* Preview mode indicator */}
-                  {!isPremium && (
-                    <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                      Preview
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold truncate text-white mb-1">{pl.name}</p>
-                  <p className="text-gray-400 text-sm">
-                    {pl.tracks?.total || 0} songs
-                  </p>
-                </div>
+          {/* MOBILE-RESPONSIVE MADE FOR YOU */}
+          <section className="mb-6 lg:mb-8">
+            <h3 className="text-lg lg:text-xl font-semibold mb-4 lg:mb-6">Made for You</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+              <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-4 lg:p-6 rounded-xl">
+                <h4 className="font-bold mb-2 text-sm lg:text-base">Discover Weekly</h4>
+                <p className="text-xs lg:text-sm opacity-80">Your weekly mixtape of fresh music</p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Made for You section */}
-        <section className="mb-8">
-          <h3 className="text-xl font-semibold mb-6">Made for You</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-6 rounded-xl">
-              <h4 className="font-bold mb-2">Discover Weekly</h4>
-              <p className="text-sm opacity-80">Your weekly mixtape of fresh music</p>
+              <div className="bg-gradient-to-br from-green-900 to-green-700 p-4 lg:p-6 rounded-xl">
+                <h4 className="font-bold mb-2 text-sm lg:text-base">Release Radar</h4>
+                <p className="text-xs lg:text-sm opacity-80">Catch all the latest music</p>
+              </div>
+              <div className="bg-gradient-to-br from-purple-900 to-purple-700 p-4 lg:p-6 rounded-xl">
+                <h4 className="font-bold mb-2 text-sm lg:text-base">Daily Mix 1</h4>
+                <p className="text-xs lg:text-sm opacity-80">Based on your recent listening</p>
+              </div>
+              <div className="bg-gradient-to-br from-red-900 to-red-700 p-4 lg:p-6 rounded-xl">
+                <h4 className="font-bold mb-2 text-sm lg:text-base">On Repeat</h4>
+                <p className="text-xs lg:text-sm opacity-80">Songs you can't stop playing</p>
+              </div>
             </div>
-            <div className="bg-gradient-to-br from-green-900 to-green-700 p-6 rounded-xl">
-              <h4 className="font-bold mb-2">Release Radar</h4>
-              <p className="text-sm opacity-80">Catch all the latest music</p>
-            </div>
-            <div className="bg-gradient-to-br from-purple-900 to-purple-700 p-6 rounded-xl">
-              <h4 className="font-bold mb-2">Daily Mix 1</h4>
-              <p className="text-sm opacity-80">Based on your recent listening</p>
-            </div>
-            <div className="bg-gradient-to-br from-red-900 to-red-700 p-6 rounded-xl">
-              <h4 className="font-bold mb-2">On Repeat</h4>
-              <p className="text-sm opacity-80">Songs you can't stop playing</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
 
-      {/* ADDED: Popups */}
+      {/* Popups */}
       <LikedSongsPopup
         isOpen={showLikedSongsPopup}
         onClose={() => setShowLikedSongsPopup(false)}

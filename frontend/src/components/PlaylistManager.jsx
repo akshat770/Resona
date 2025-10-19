@@ -155,15 +155,15 @@ export default function PlaylistManager({
         </button>
       )}
 
-      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white">
+      <div className="bg-gray-800 rounded-xl p-4 lg:p-6 border border-gray-700">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+          <h3 className="text-lg lg:text-xl font-semibold text-white">
             {selectedPlaylist ? `Managing: ${selectedPlaylist.name}` : 'Manage Playlists'}
           </h3>
           {!selectedPlaylist && (
             <button
               onClick={() => setIsCreating(!isCreating)}
-              className="bg-green-500 hover:bg-green-400 text-black px-4 py-2 rounded-lg font-medium transition-colors"
+              className="bg-green-500 hover:bg-green-400 text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm lg:text-base w-full sm:w-auto"
             >
               + Create Playlist
             </button>
@@ -186,7 +186,7 @@ export default function PlaylistManager({
                 onChange={(e) => setNewPlaylistDescription(e.target.value)}
                 className="w-full bg-gray-600 border border-gray-500 rounded-lg px-3 py-2 text-white placeholder-gray-400 h-20 resize-none"
               />
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={createPlaylist}
                   disabled={!newPlaylistName.trim() || isLoading}
@@ -218,19 +218,19 @@ export default function PlaylistManager({
                 key={`${item.track.id}-${index}`}
                 className="flex items-center justify-between bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors"
               >
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <img
                     src={item.track.album.images?.[0]?.url || "/placeholder.png"}
                     alt={item.track.name}
                     className="w-10 h-10 rounded object-cover"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{item.track.name}</p>
-                    <p className="text-sm text-gray-400 truncate">
+                    <p className="font-medium text-white truncate text-sm">{item.track.name}</p>
+                    <p className="text-xs text-gray-400 truncate">
                       {item.track.artists.map(a => a.name).join(", ")}
                     </p>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 hidden sm:block">
                     {Math.floor(item.track.duration_ms / 60000)}:
                     {Math.floor((item.track.duration_ms % 60000) / 1000)
                       .toString().padStart(2, '0')}
@@ -261,13 +261,13 @@ export default function PlaylistManager({
                 className="flex items-center justify-between bg-gray-700 rounded-lg p-3 hover:bg-gray-600 transition-colors"
               >
                 <div 
-                  className="flex items-center gap-3 flex-1 cursor-pointer"
+                  className="flex items-center gap-3 flex-1 cursor-pointer min-w-0"
                   onClick={() => loadPlaylistTracks(playlist)}
                 >
                   <img
                     src={playlist.images?.[0]?.url || "/placeholder.png"}
                     alt={playlist.name}
-                    className="w-12 h-12 rounded-lg object-cover"
+                    className="w-10 h-10 lg:w-12 lg:h-12 rounded-lg object-cover"
                   />
                   <div className="flex-1 min-w-0">
                     {editingPlaylist?.id === playlist.id ? (
@@ -294,8 +294,8 @@ export default function PlaylistManager({
                       </div>
                     ) : (
                       <>
-                        <p className="font-medium text-white truncate">{playlist.name}</p>
-                        <p className="text-sm text-gray-400 truncate">
+                        <p className="font-medium text-white truncate text-sm lg:text-base">{playlist.name}</p>
+                        <p className="text-xs lg:text-sm text-gray-400 truncate">
                           {playlist.tracks?.total || 0} songs
                           {playlist.description && ` • ${playlist.description}`}
                         </p>
@@ -304,7 +304,7 @@ export default function PlaylistManager({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 lg:gap-2">
                   {editingPlaylist?.id === playlist.id ? (
                     <>
                       <button

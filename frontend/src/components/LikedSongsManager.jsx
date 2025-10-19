@@ -107,7 +107,7 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect, playl
       return 0;
     });
 
-  // ADDED: Return object with selection methods for parent to use
+  // Return object with selection methods for parent to use
   const selectionMethods = {
     isSelecting,
     selectedSongs,
@@ -115,23 +115,23 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect, playl
     toggleSongSelection
   };
 
-  // ADDED: Expose selection methods to parent component
+  // Expose selection methods to parent component
   if (onSongSelect && typeof onSongSelect === 'function') {
     onSongSelect(selectionMethods);
   }
 
   return (
     <div className="space-y-4">
-      {/* Management Controls */}
+      {/* MOBILE-RESPONSIVE MANAGEMENT CONTROLS */}
       <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 w-full lg:w-auto">
             <button
               onClick={() => {
                 setIsSelecting(!isSelecting);
                 if (isSelecting) setSelectedSongs(new Set());
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm lg:text-base ${
                 isSelecting 
                   ? 'bg-blue-500 hover:bg-blue-400 text-white'
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
@@ -155,50 +155,52 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect, playl
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
             {/* Search */}
             <input
               type="text"
               placeholder="Search songs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 text-sm w-48"
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 text-sm w-full sm:w-48"
             />
 
             {/* Sort Controls */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
-            >
-              <option value="added_at">Date Added</option>
-              <option value="name">Song Name</option>
-              <option value="artist">Artist</option>
-              <option value="album">Album</option>
-            </select>
-
-            <button
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="text-gray-400 hover:text-white p-2"
-              title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
-            >
-              <svg 
-                className={`w-4 h-4 transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
-                fill="currentColor" 
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
               >
-                <path d="M7 14l5-5 5 5z"/>
-              </svg>
-            </button>
+                <option value="added_at">Date Added</option>
+                <option value="name">Song Name</option>
+                <option value="artist">Artist</option>
+                <option value="album">Album</option>
+              </select>
+
+              <button
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="text-gray-400 hover:text-white p-2"
+                title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
+              >
+                <svg 
+                  className={`w-4 h-4 transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M7 14l5-5 5 5z"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Bulk Actions */}
+        {/* MOBILE-RESPONSIVE BULK ACTIONS */}
         {isSelecting && selectedSongs.size > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-700 flex items-center gap-3">
+          <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <button
               onClick={removeSelectedSongs}
-              className="bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              className="bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm w-full sm:w-auto"
             >
               Remove {selectedSongs.size} Song{selectedSongs.size !== 1 ? 's' : ''}
             </button>
@@ -211,7 +213,7 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect, playl
                     e.target.value = '';
                   }
                 }}
-                className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm w-full sm:w-auto"
               >
                 <option value="">Add to Playlist...</option>
                 {playlists.map(playlist => (
@@ -231,7 +233,7 @@ export default function LikedSongsManager({ songs, setSongs, onSongSelect, playl
         {searchQuery && ` matching "${searchQuery}"`}
       </div>
 
-      {/* ADDED: Selection info for parent component */}
+      {/* Selection info for parent component */}
       {isSelecting && (
         <div className="text-sm text-gray-400">
           Click on songs in the list below to select them
