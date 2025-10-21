@@ -271,64 +271,73 @@ router.get('/search', verifySpotifyToken, async (req, res) => {
 });
 
 // AI Playlist Generation Route
-// AI Playlist Generation Route
 router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
   console.log('=== AI Playlist Generation Started ===');
-  console.log('Request body:', req.body);
-  console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
   
   try {
     const { prompt, songCount = 20 } = req.body;
     
     if (!prompt) {
-      console.log('Error: No prompt provided');
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
     if (!process.env.GEMINI_API_KEY) {
-      console.log('Error: GEMINI_API_KEY not found');
       return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
     }
 
     console.log('Initializing Gemini...');
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // FIXED: Use the correct model name
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const aiPrompt = `You are a music curator. Based on the user's request: "${prompt}", create a playlist of exactly ${songCount} songs. Return ONLY a JSON array of songs in this exact format: [{"title": "Song Title", "artist": "Artist Name", "genre": "Genre", "reason": "Brief reason"}]`;
+    const aiPrompt = `
+    You are a music curator. Based on the user's request: "${prompt}", 
+    create a playlist of exactly ${songCount} songs.
+    
+    Return ONLY a JSON array of songs in this exact format:
+    [
+      {
+        "title": "Song Title",
+        "artist": "Artist Name",
+        "genre": "Genre",
+        "reason": "Brief reason why this song fits"
+      }
+    ]
+    
+    Important:
+    - Return ONLY valid JSON, no additional text
+    - Include popular and recognizable songs when possible
+    - Make sure all songs exist and are searchable on Spotify
+    - Vary the artists to create a diverse playlist
+    - Each song should clearly match the theme: "${prompt}"
+    `;
 
-    console.log('Calling Gemini API...');
+    console.log('Calling Gemini API with model: gemini-1.5-flash');
     const result = await model.generateContent(aiPrompt);
-    console.log('Gemini API called successfully');
-    
     const response = await result.response;
     let aiResponse = response.text();
-    console.log('Raw AI response:', aiResponse);
     
-    // Clean up response
+    console.log('Gemini response received');
+    
+    // Clean up the response to extract JSON
     aiResponse = aiResponse.replace(/``````\n?/g, '').trim();
-    console.log('Cleaned AI response:', aiResponse);
     
     let suggestions;
     try {
       suggestions = JSON.parse(aiResponse);
-      console.log('Parsed suggestions:', suggestions.length, 'items');
     } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
-      console.error('Failed to parse response:', aiResponse);
+      console.error('Failed to parse AI response:', aiResponse);
       return res.status(500).json({ 
-        error: 'AI response format error', 
-        details: parseError.message,
-        rawResponse: aiResponse
+        error: 'Failed to generate playlist', 
+        details: 'AI response format error' 
       });
     }
 
-    console.log('Starting Spotify search for', suggestions.length, 'songs...');
+    // Search for each song on Spotify and get actual Spotify data
     const spotifyTracks = [];
     
     for (const suggestion of suggestions) {
       try {
         const searchQuery = `${suggestion.title} ${suggestion.artist}`;
-        console.log('Searching Spotify for:', searchQuery);
-        
         const searchResult = await req.spotifyApi.searchTracks(searchQuery, { limit: 1 });
         
         if (searchResult.body.tracks.items.length > 0) {
@@ -338,19 +347,14 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
             aiReason: suggestion.reason,
             aiGenre: suggestion.genre
           });
-          console.log('Found track:', track.name);
-        } else {
-          console.log('No Spotify results for:', searchQuery);
         }
       } catch (searchError) {
-        console.error(`Spotify search error for ${suggestion.title}:`, searchError.message);
+        console.error(`Failed to search for: ${suggestion.title} by ${suggestion.artist}`);
       }
     }
 
-    console.log('Found', spotifyTracks.length, 'tracks on Spotify');
-
-    if (spotifyTracks.length < songCount * 0.5) { // At least 50% success
-      console.log('Not enough tracks found');
+    // If we don't have enough tracks, fill with similar music
+    if (spotifyTracks.length < songCount * 0.7) { // At least 70% success rate
       return res.status(400).json({ 
         error: 'Could not find enough matching songs on Spotify',
         found: spotifyTracks.length,
@@ -372,19 +376,11 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
     
   } catch (error) {
     console.error('=== AI Playlist Generation Error ===');
-    console.error('Error type:', error.constructor.name);
     console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    
-    if (error.response) {
-      console.error('Error response data:', error.response.data);
-      console.error('Error response status:', error.response.status);
-    }
     
     res.status(500).json({ 
       error: 'Failed to generate AI playlist', 
-      details: error.message,
-      type: error.constructor.name
+      details: error.message 
     });
   }
 });
