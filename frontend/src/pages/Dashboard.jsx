@@ -7,6 +7,7 @@ import PlaylistPopup from "../components/PlaylistPopup";
 import SearchBar from "../components/SearchBar";
 import { useToast } from "../components/ToastProvider";
 import AddToPlaylistPopup from "../components/AddToPlaylistPopup";
+import AIPlaylistGenerator from "../components/AIPlaylistGenerator";
 
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
@@ -19,7 +20,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAddToPlaylistPopup, setShowAddToPlaylistPopup] = useState(false);
   const [selectedTrackForPlaylist, setSelectedTrackForPlaylist] = useState(null);
-
+  const [showAIPlaylistGenerator, setShowAIPlaylistGenerator] = useState(false);
+  
   // Search functionality states
   const [showSearchUI, setShowSearchUI] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
@@ -478,7 +480,10 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <p className="font-semibold text-sm lg:text-base">Discover</p>
                 <p className="text-xs lg:text-sm opacity-80 mt-1">New releases</p>
               </button>
-              <button className="bg-gradient-to-br from-pink-600 to-purple-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform">
+              <button 
+                onClick={() => setShowAIPlaylistGenerator(true)}
+                className="bg-gradient-to-br from-pink-600 to-purple-600 p-3 lg:p-4 rounded-xl text-left hover:scale-105 active:scale-95 transition-transform"
+              >
                 <p className="font-semibold text-sm lg:text-base">AI Playlist</p>
                 <p className="text-xs lg:text-sm opacity-80 mt-1">Smart curation</p>
               </button>
@@ -656,6 +661,16 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         }}
         track={selectedTrackForPlaylist}
         playlists={playlists}
+      />
+
+      {/* AI Playlist Generator */}
+      <AIPlaylistGenerator
+        isOpen={showAIPlaylistGenerator}
+        onClose={() => setShowAIPlaylistGenerator(false)}
+        onPlaylistGenerated={(newPlaylist) => {
+          setPlaylists(prev => [newPlaylist, ...prev]);
+          showToast(`Created "${newPlaylist.name}"!`, 'success');
+        }}
       />
     </div>
   );
