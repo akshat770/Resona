@@ -287,7 +287,7 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
 
     console.log('Initializing Gemini...');
     // FIXED: Use the correct model name
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const aiPrompt = `
     You are a music curator. Based on the user's request: "${prompt}", 
