@@ -287,7 +287,7 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
 
     console.log('Initializing Gemini...');
     // FIXED: Use the correct model name
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     
     const aiPrompt = `
     You are a music curator. Based on the user's request: "${prompt}", 
@@ -312,23 +312,30 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
     - Each song should clearly match the theme: "${prompt}"
     `;
 
-    console.log('Calling Gemini API with model: gemini-1.5-pro');
+    console.log('Calling Gemini API with model: gemini-2.5-flash');
     const result = await model.generateContent(aiPrompt);
     const response = await result.response;
     let aiResponse = response.text();
     
     console.log('Raw Gemini response:', aiResponse);
     
-    // FIXED: Better cleanup of the response to extract JSON
-    aiResponse = aiResponse
-      .replace(/``````json
-      .replace(/``````
-      .replace(/^[\s\n]*/, '')        // Remove leading whitespace/newlines
-      .replace(/[\s\n]*$/, '')        // Remove trailing whitespace/newlines
-      .trim();
+    console.log('Raw Gemini response:', aiResponse);
 
-    console.log('Cleaned response:', aiResponse);
-    
+    // Simple but working cleanup
+    let cleanedResponse = aiResponse;
+
+    // Remove ```json or ``` blocks if present
+    if (cleanedResponse.includes('```json')) {
+      cleanedResponse = cleanedResponse.split('```json')[1];
+    }
+    if (cleanedResponse && cleanedResponse.includes('```')) {
+      cleanedResponse = cleanedResponse.split('```')[0];
+    }
+
+    cleanedResponse = cleanedResponse.trim();
+
+    console.log('Cleaned response:', cleanedResponse);
+
     let suggestions;
     try {
       suggestions = JSON.parse(aiResponse);
@@ -422,6 +429,5 @@ router.post('/generate-ai-playlist', verifySpotifyToken, async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
