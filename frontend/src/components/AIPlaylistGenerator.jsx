@@ -90,139 +90,145 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      {/* FIXED: Added proper flex structure and overflow handling */}
-      <div className="bg-gray-800 rounded-xl w-full max-w-4xl h-[90vh] flex flex-col">
-        {/* Header - Fixed at top */}
-        <div className="p-6 border-b border-gray-700 flex-shrink-0">
+    // FIXED: Added padding bottom to avoid web player overlap
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pb-28">
+      {/* FIXED: Reduced height and max-width for better fit */}
+      <div className="bg-gray-800 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+        {/* FIXED: Reduced padding and made header more compact */}
+        <div className="p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                 </div>
                 AI Playlist Generator
               </h2>
-              <p className="text-gray-400 mt-1">Powered by Gemini AI</p>
+              <p className="text-gray-400 text-sm">Powered by Gemini AI</p>
             </div>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
               </svg>
             </button>
           </div>
         </div>
 
-        {/* FIXED: Content area - Scrollable */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Content area - Scrollable */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {!showPreview ? (
-            /* Generation Form */
-            <div className="p-6 space-y-6 overflow-y-auto">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Describe your perfect playlist
-                </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g., 'Upbeat pop songs for a road trip', 'Chill indie music for studying', 'High-energy workout tracks'..."
-                  className="w-full p-4 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Number of songs (10-50)
-                </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
-                    min="10"
-                    max="50"
-                    value={songCount}
-                    onChange={(e) => setSongCount(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+            /* Generation Form - FIXED: Reduced spacing and made more compact */
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Describe your perfect playlist
+                  </label>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="e.g., 'Upbeat pop songs for a road trip', 'Chill indie music for studying'..."
+                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    rows={3}
                   />
-                  <span className="text-white font-mono text-lg min-w-[3ch]">{songCount}</span>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Number of songs (10-50)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="10"
+                      max="50"
+                      value={songCount}
+                      onChange={(e) => setSongCount(parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="text-white font-mono text-lg min-w-[3ch]">{songCount}</span>
+                  </div>
+                </div>
+
+                {/* FIXED: Made examples more compact */}
+                <div>
+                  <p className="text-sm font-medium text-gray-300 mb-2">Try these examples:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {[
+                      "Energetic workout music with heavy bass",
+                      "Relaxing acoustic songs for rainy days",
+                      "90s nostalgic hits for millennials",
+                      "Electronic dance music for parties",
+                      "Top 10 phonks for gym",
+                      "Best Radiohead songs",
+                    ].map((example) => (
+                      <button
+                        key={example}
+                        onClick={() => setPrompt(example)}
+                        className="text-left p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-300 hover:text-white transition-colors border border-gray-600 hover:border-purple-500"
+                      >
+                        "{example}"
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Example prompts */}
-              <div>
-                <p className="text-sm font-medium text-gray-300 mb-3">Try these examples:</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {[
-                    "Energetic workout music with heavy bass",
-                    "Relaxing acoustic songs for rainy days",
-                    "90s nostalgic hits for millennials",
-                    "Electronic dance music for parties",
-                    "Sad indie songs for late night drives",
-                    "Happy pop songs to boost my mood"
-                  ].map((example) => (
-                    <button
-                      key={example}
-                      onClick={() => setPrompt(example)}
-                      className="text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm text-gray-300 hover:text-white transition-colors border border-gray-600 hover:border-purple-500"
-                    >
-                      "{example}"
-                    </button>
-                  ))}
-                </div>
+              {/* FIXED: Fixed button at bottom with proper spacing */}
+              <div className="p-4 border-t border-gray-700 flex-shrink-0">
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !prompt.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Generating AI Playlist...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      Generate AI Playlist
+                    </>
+                  )}
+                </button>
               </div>
-
-              <button
-                onClick={handleGenerate}
-                disabled={loading || !prompt.trim()}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Generating AI Playlist...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Generate AI Playlist
-                  </>
-                )}
-              </button>
             </div>
           ) : (
-            /* FIXED: Playlist Preview - Properly scrollable */
+            /* Playlist Preview - FIXED: Made more compact */
             <div className="flex flex-col h-full">
-              {/* Preview Header - Fixed */}
-              <div className="flex-shrink-0 p-6 border-b border-gray-700">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              {/* FIXED: Reduced padding for preview header */}
+              <div className="flex-shrink-0 p-4 border-b border-gray-700">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                   <div>
-                    <h3 className="text-xl font-bold text-white">{generatedPlaylist.name}</h3>
+                    <h3 className="text-lg font-bold text-white">{generatedPlaylist.name}</h3>
                     <p className="text-gray-400 text-sm mt-1">{generatedPlaylist.description}</p>
-                    <p className="text-gray-500 text-sm mt-1">{generatedPlaylist.tracks.length} tracks</p>
+                    <p className="text-gray-500 text-sm">{generatedPlaylist.tracks.length} tracks</p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setShowPreview(false)}
-                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
                     >
                       Generate New
                     </button>
                     <button
                       onClick={handleSavePlaylist}
                       disabled={loading}
-                      className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       {loading ? (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                       ) : (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                         </svg>
                       )}
@@ -232,38 +238,38 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
                 </div>
               </div>
 
-              {/* FIXED: Track List - Scrollable */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-2">
+              {/* FIXED: Track List - More compact spacing */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-1">
                   {generatedPlaylist.tracks.map((track, index) => (
                     <div
                       key={track.id}
-                      className="flex items-center gap-4 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg group transition-colors"
+                      className="flex items-center gap-3 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg group transition-colors"
                     >
-                      <span className="text-gray-400 text-sm font-mono w-8 text-center">
+                      <span className="text-gray-400 text-sm font-mono w-6 text-center">
                         {index + 1}
                       </span>
                       <img
                         src={track.album?.images?.[0]?.url || '/placeholder.png'}
                         alt={track.name}
-                        className="w-12 h-12 rounded object-cover"
+                        className="w-10 h-10 rounded object-cover"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white truncate">{track.name}</p>
-                        <p className="text-gray-400 text-sm truncate">
+                        <p className="font-semibold text-white text-sm truncate">{track.name}</p>
+                        <p className="text-gray-400 text-xs truncate">
                           {track.artists?.map(a => a.name).join(', ')}
                         </p>
                         {track.aiReason && (
-                          <p className="text-purple-400 text-xs mt-1 italic">
-                            💡 {track.aiReason}
+                          <p className="text-purple-400 text-xs mt-0.5 italic line-clamp-1">
+                            {track.aiReason}
                           </p>
                         )}
                       </div>
                       <button
                         onClick={() => handlePlayTrack(track)}
-                        className="p-2 rounded-full hover:bg-green-400/30 opacity-0 group-hover:opacity-100 transition-all"
+                        className="p-1.5 rounded-full hover:bg-green-400/30 opacity-0 group-hover:opacity-100 transition-all"
                       >
-                        <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"/>
                         </svg>
                       </button>
