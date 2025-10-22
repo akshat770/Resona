@@ -87,9 +87,10 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      {/* FIXED: Smaller size and proper centering */}
-      <div className="bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[75vh] flex flex-col shadow-2xl border border-gray-700">
+    <>
+    {/* FIXED: Added bottom padding to avoid web player overlap */}
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pb-32">
+      <div className="bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[70vh] flex flex-col shadow-2xl border border-gray-700">
         {/* Header */}
         <div className="p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -158,7 +159,7 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
                     </div>
                   </div>
 
-                  {/* Example Prompts - Smaller grid */}
+                  {/* Example Prompts */}
                   <div>
                     <p className="text-sm font-medium text-gray-300 mb-2">Try these examples:</p>
                     <div className="grid grid-cols-1 gap-2">
@@ -288,5 +289,6 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
         </div>
       </div>
     </div>
+    </>
   );
 }

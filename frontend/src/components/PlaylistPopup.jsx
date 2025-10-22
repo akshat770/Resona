@@ -137,9 +137,9 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
         onClick={onClose}
       />
       
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-800 rounded-2xl w-full max-w-3xl h-[75vh] flex flex-col shadow-2xl border border-gray-700 overflow-hidden">
-          {/* FIXED: Header with proper rounded corners */}
+      {/* FIXED: Added bottom padding to avoid web player overlap */}
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pb-32">
+        <div className="bg-gray-800 rounded-2xl w-full max-w-3xl h-[70vh] flex flex-col shadow-2xl border border-gray-700 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <img
@@ -247,7 +247,6 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
             </div>
           </div>
 
-          {/* Controls Bar */}
           <div className="bg-gray-700 px-4 py-3 flex items-center justify-between border-b border-gray-600 flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
@@ -293,7 +292,6 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
             </div>
           </div>
 
-          {/* FIXED: Scrollable Content */}
           <div className="flex-1 min-h-0">
             {loading ? (
               <div className="flex items-center justify-center h-full">
@@ -327,7 +325,6 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
               </div>
             ) : (
               <div className="h-full overflow-y-auto">
-                {/* Mobile View */}
                 <div className="block lg:hidden p-4 space-y-2">
                   {tracks.map((item, index) => (
                     <div
@@ -385,7 +382,6 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                   ))}
                 </div>
 
-                {/* Desktop View */}
                 <div className="hidden lg:block p-4">
                   <div className="grid grid-cols-12 gap-4 px-4 py-3 text-gray-400 text-sm font-medium border-b border-gray-700 mb-2">
                     <div className="col-span-1">#</div>

@@ -77,9 +77,9 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
         onClick={onClose}
       />
       
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 rounded-2xl w-full max-w-3xl h-[75vh] flex flex-col shadow-2xl border border-gray-700 overflow-hidden">
-          {/* FIXED: Header with proper rounded corners */}
+      {/* FIXED: Added bottom padding to avoid web player overlap */}
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pb-32">
+        <div className="bg-gray-900 rounded-2xl w-full max-w-3xl h-[70vh] flex flex-col shadow-2xl border border-gray-700 overflow-hidden">
           <div className="bg-gradient-to-r from-purple-600 to-green-600 p-4 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center">
@@ -105,7 +105,6 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
             </button>
           </div>
 
-          {/* Controls Bar */}
           <div className="bg-gray-800 px-4 py-3 flex items-center gap-3 border-b border-gray-700 flex-shrink-0">
             <button
               onClick={playAllLikedSongs}
@@ -149,7 +148,6 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
             </div>
           </div>
 
-          {/* Manager Section */}
           {showManager && (
             <div className="px-4 py-3 border-b border-gray-700 flex-shrink-0">
               <LikedSongsManager
@@ -161,7 +159,6 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
             </div>
           )}
 
-          {/* FIXED: Scrollable Content */}
           <div className="flex-1 min-h-0">
             {loading ? (
               <div className="flex items-center justify-center h-full">
@@ -188,7 +185,6 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
               </div>
             ) : (
               <div className="h-full overflow-y-auto">
-                {/* MOBILE VIEW */}
                 <div className="block lg:hidden p-4 space-y-1">
                   {songs.map((item, index) => (
                     <div
@@ -227,7 +223,6 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
                   ))}
                 </div>
 
-                {/* DESKTOP VIEW */}
                 <div className="hidden lg:block p-4">
                   <div className="grid grid-cols-12 gap-4 px-3 py-2 text-gray-400 text-xs font-medium border-b border-gray-800 mb-2">
                     <div className="col-span-1">#</div>
