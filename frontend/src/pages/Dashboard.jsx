@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import playbackService from "../services/playbackService";
-import PlaylistManager from "../components/PlaylistManager";
 import LikedSongsPopup from "../components/LikedSongsPopup";
 import PlaylistPopup from "../components/PlaylistPopup";
 import SearchBar from "../components/SearchBar";
@@ -13,7 +12,6 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
   const [recent, setRecent] = useState([]);
-  const [showPlaylistManager, setShowPlaylistManager] = useState(false);
   const [showLikedSongsPopup, setShowLikedSongsPopup] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
   const [showPlaylistPopup, setShowPlaylistPopup] = useState(false);
@@ -605,33 +603,10 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
             </div>
           </section>
 
-          {/* Playlist Manager */}
-          {showPlaylistManager && (
-            <section className="mb-6 lg:mb-8">
-              <PlaylistManager
-                playlists={playlists}
-                setPlaylists={setPlaylists}
-                onPlaylistSelect={(playlist) => {
-                  console.log('Selected playlist:', playlist);
-                  setShowPlaylistManager(false);
-                }}
-                onCreatePlaylist={(playlist) => {
-                  console.log('Created playlist:', playlist);
-                }}
-              />
-            </section>
-          )}
-
-          {/* MOBILE-RESPONSIVE PLAYLISTS */}
+          {/* MOBILE-RESPONSIVE PLAYLISTS - REMOVED MANAGE BUTTON */}
           <section className="mb-6 lg:mb-8">
             <div className="flex items-center justify-between mb-4 lg:mb-6">
               <h3 className="text-lg lg:text-xl font-semibold">Your Playlists</h3>
-              <button
-                onClick={() => setShowPlaylistManager(!showPlaylistManager)}
-                className="bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-white px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors"
-              >
-                {showPlaylistManager ? 'Hide' : 'Manage'}
-              </button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 lg:gap-6">
               {playlists.map(pl => (
@@ -717,6 +692,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         playlist={selectedPlaylist}
         playerReady={playerReady}
         isPremium={isPremium}
+        playlists={playlists}
+        setPlaylists={setPlaylists} // ADDED: Pass setPlaylists for management
       />
 
       {/* Search Overlay */}
