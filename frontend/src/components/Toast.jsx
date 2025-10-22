@@ -1,4 +1,3 @@
-// components/Toast.jsx
 import { useState, useEffect } from "react";
 
 export default function Toast({ message, type = "success", isVisible, onClose, duration = 3000 }) {
