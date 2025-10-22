@@ -25,6 +25,9 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   // Search functionality states
   const [showSearchUI, setShowSearchUI] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
+  
+  // ADDED: State for tracking liked songs in search
+  const [searchLikedSongs, setSearchLikedSongs] = useState(new Set());
 
   // Toast functionality
   const { showToast } = useToast();
@@ -84,18 +87,72 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     fetchData();
   }, [setAccessToken, setIsPremium, setIsAuthenticated]);
 
-  // Add to liked songs function
+  // ADDED: Function to check liked status of multiple songs
+  const checkMultipleLikedStatus = async (trackIds) => {
+    try {
+      const token = localStorage.getItem("jwt");
+      const promises = trackIds.map(async (trackId) => {
+        const response = await api.get(`/spotify/check-liked/${trackId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        return { trackId, isLiked: response.data[0] };
+      });
+      
+      const results = await Promise.all(promises);
+      const likedSet = new Set();
+      results.forEach(({ trackId, isLiked }) => {
+        if (isLiked) likedSet.add(trackId);
+      });
+      
+      setSearchLikedSongs(likedSet);
+    } catch (error) {
+      console.error('Error checking liked status:', error);
+    }
+  };
+
+  // ADDED: Check liked status when search results change
+  useEffect(() => {
+    if (searchResults?.tracks?.items?.length > 0) {
+      const trackIds = searchResults.tracks.items.map(track => track.id);
+      checkMultipleLikedStatus(trackIds);
+    }
+  }, [searchResults]);
+
+  // UPDATED: Add to liked songs function with state tracking
   const addToLikedSongs = async (trackId, trackName) => {
     try {
       const token = localStorage.getItem("jwt");
-      await api.put("/spotify/liked-songs", 
-        { trackIds: [trackId] },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const isCurrentlyLiked = searchLikedSongs.has(trackId);
       
-      showToast(`Added "${trackName}" to Liked Songs`, "heart");
+      if (isCurrentlyLiked) {
+        // Remove from liked songs
+        await api.delete("/spotify/liked-songs", {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { trackIds: [trackId] }
+        });
+        
+        // Update local state
+        const newLikedSet = new Set(searchLikedSongs);
+        newLikedSet.delete(trackId);
+        setSearchLikedSongs(newLikedSet);
+        
+        showToast(`Removed "${trackName}" from Liked Songs`, "success");
+      } else {
+        // Add to liked songs
+        await api.put("/spotify/liked-songs", 
+          { trackIds: [trackId] },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        // Update local state
+        const newLikedSet = new Set(searchLikedSongs);
+        newLikedSet.add(trackId);
+        setSearchLikedSongs(newLikedSet);
+        
+        showToast(`Added "${trackName}" to Liked Songs`, "heart");
+      }
     } catch (error) {
-      showToast("Failed to add to Liked Songs", "error");
+      showToast("Failed to update Liked Songs", "error");
     }
   };
 
@@ -159,7 +216,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     setShowPlaylistPopup(true);
   };
 
-  // Search overlay render function
+  // UPDATED: Search overlay render function
   const renderSearchOverlay = () => (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
       <div className="flex items-center p-4 border-b border-gray-700">
@@ -168,7 +225,11 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           onResults={(results) => setSearchResults(results)}
         />
         <button
-          onClick={() => { setShowSearchUI(false); setSearchResults(null); }}
+          onClick={() => { 
+            setShowSearchUI(false); 
+            setSearchResults(null); 
+            setSearchLikedSongs(new Set()); // ADDED: Clear liked songs state
+          }}
           className="ml-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700"
           aria-label="Close Search"
         >
@@ -185,44 +246,53 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
               <section className="mb-8">
                 <h3 className="text-lg font-bold text-green-400 mb-3">Tracks</h3>
                 <div className="space-y-2">
-                  {searchResults.tracks.items.filter(track => track && track.id).map(track => (
-                    <div key={track.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer">
-                      <img src={track.album?.images?.[0]?.url || "/placeholder.png"} alt={track.name || "Track"} className="w-10 h-10 rounded" />
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate">{track.name || "Unknown Track"}</div>
-                        <div className="text-gray-400 text-sm truncate">{track.artists?.map(a => a.name).join(", ") || "Unknown Artist"}</div>
+                  {searchResults.tracks.items.filter(track => track && track.id).map(track => {
+                    const isLiked = searchLikedSongs.has(track.id); // ADDED: Check liked status
+                    
+                    return (
+                      <div key={track.id} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer">
+                        <img src={track.album?.images?.[0]?.url || "/placeholder.png"} alt={track.name || "Track"} className="w-10 h-10 rounded" />
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate">{track.name || "Unknown Track"}</div>
+                          <div className="text-gray-400 text-sm truncate">{track.artists?.map(a => a.name).join(", ") || "Unknown Artist"}</div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {/* UPDATED: Heart button with proper liked status */}
+                          <button
+                            title={isLiked ? "Remove from Liked Songs" : "Add to Liked Songs"}
+                            className={`p-2 rounded-full transition-colors ${
+                              isLiked 
+                                ? 'text-green-400 hover:text-green-300' 
+                                : 'text-gray-400 hover:text-green-400'
+                            }`}
+                            onClick={() => addToLikedSongs(track.id, track.name)}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                            </svg>
+                          </button>
+                          <button
+                            title="Add to Playlist"
+                            className="p-2 rounded-full hover:bg-gray-400/30"
+                            onClick={() => handleAddToPlaylist(track)}
+                          >
+                            <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                          </button>
+                          <button
+                            title="Play"
+                            className="p-2 rounded-full hover:bg-green-400/30"
+                            onClick={() => playTrack({ ...track, preview_url: track.preview_url })}
+                          >
+                            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          title="Add to Liked Songs"
-                          className="p-2 rounded-full hover:bg-green-400/30"
-                          onClick={() => addToLikedSongs(track.id, track.name)}
-                        >
-                          <svg className="w-4 h-4 text-gray-400 hover:text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                          </svg>
-                        </button>
-                        <button
-                          title="Add to Playlist"
-                          className="p-2 rounded-full hover:bg-gray-400/30"
-                          onClick={() => handleAddToPlaylist(track)}
-                        >
-                          <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                          </svg>
-                        </button>
-                        <button
-                          title="Play"
-                          className="p-2 rounded-full hover:bg-green-400/30"
-                          onClick={() => playTrack({ ...track, preview_url: track.preview_url })}
-                        >
-                          <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             )}
