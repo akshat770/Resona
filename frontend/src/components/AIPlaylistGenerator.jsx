@@ -44,7 +44,7 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
     try {
       const token = localStorage.getItem('jwt');
       
-      // Create playlist on Spotify (Fixed: use 'isPublic' instead of 'public')
+      // Create playlist on Spotify
       const createResponse = await api.post('/spotify/create-playlist', {
         name: generatedPlaylist.name,
         description: generatedPlaylist.description,
@@ -91,9 +91,10 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-700">
+      {/* FIXED: Added proper flex structure and overflow handling */}
+      <div className="bg-gray-800 rounded-xl w-full max-w-4xl h-[90vh] flex flex-col">
+        {/* Header - Fixed at top */}
+        <div className="p-6 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -108,7 +109,7 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
             </div>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700"
+              className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -117,10 +118,11 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1">
+        {/* FIXED: Content area - Scrollable */}
+        <div className="flex-1 overflow-hidden flex flex-col">
           {!showPreview ? (
             /* Generation Form */
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Describe your perfect playlist
@@ -195,74 +197,79 @@ export default function AIPlaylistGenerator({ isOpen, onClose, onPlaylistGenerat
               </button>
             </div>
           ) : (
-            /* Playlist Preview */
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-white">{generatedPlaylist.name}</h3>
-                  <p className="text-gray-400 text-sm mt-1">{generatedPlaylist.description}</p>
-                  <p className="text-gray-500 text-sm mt-1">{generatedPlaylist.tracks.length} tracks</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    Generate New
-                  </button>
-                  <button
-                    onClick={handleSavePlaylist}
-                    disabled={loading}
-                    className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {loading ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-                      </svg>
-                    )}
-                    Save to Spotify
-                  </button>
+            /* FIXED: Playlist Preview - Properly scrollable */
+            <div className="flex flex-col h-full">
+              {/* Preview Header - Fixed */}
+              <div className="flex-shrink-0 p-6 border-b border-gray-700">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{generatedPlaylist.name}</h3>
+                    <p className="text-gray-400 text-sm mt-1">{generatedPlaylist.description}</p>
+                    <p className="text-gray-500 text-sm mt-1">{generatedPlaylist.tracks.length} tracks</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowPreview(false)}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      Generate New
+                    </button>
+                    <button
+                      onClick={handleSavePlaylist}
+                      disabled={loading}
+                      className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                        </svg>
+                      )}
+                      Save to Spotify
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Track List */}
-              <div className="space-y-2">
-                {generatedPlaylist.tracks.map((track, index) => (
-                  <div
-                    key={track.id}
-                    className="flex items-center gap-4 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg group transition-colors"
-                  >
-                    <span className="text-gray-400 text-sm font-mono w-8 text-center">
-                      {index + 1}
-                    </span>
-                    <img
-                      src={track.album?.images?.[0]?.url || '/placeholder.png'}
-                      alt={track.name}
-                      className="w-12 h-12 rounded object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white truncate">{track.name}</p>
-                      <p className="text-gray-400 text-sm truncate">
-                        {track.artists?.map(a => a.name).join(', ')}
-                      </p>
-                      {track.aiReason && (
-                        <p className="text-purple-400 text-xs mt-1 italic">
-                          💡 {track.aiReason}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handlePlayTrack(track)}
-                      className="p-2 rounded-full hover:bg-green-400/30 opacity-0 group-hover:opacity-100 transition-all"
+              {/* FIXED: Track List - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-2">
+                  {generatedPlaylist.tracks.map((track, index) => (
+                    <div
+                      key={track.id}
+                      className="flex items-center gap-4 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg group transition-colors"
                     >
-                      <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                      <span className="text-gray-400 text-sm font-mono w-8 text-center">
+                        {index + 1}
+                      </span>
+                      <img
+                        src={track.album?.images?.[0]?.url || '/placeholder.png'}
+                        alt={track.name}
+                        className="w-12 h-12 rounded object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-white truncate">{track.name}</p>
+                        <p className="text-gray-400 text-sm truncate">
+                          {track.artists?.map(a => a.name).join(', ')}
+                        </p>
+                        {track.aiReason && (
+                          <p className="text-purple-400 text-xs mt-1 italic">
+                            💡 {track.aiReason}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handlePlayTrack(track)}
+                        className="p-2 rounded-full hover:bg-green-400/30 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
