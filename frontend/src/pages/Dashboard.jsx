@@ -8,6 +8,19 @@ import { useToast } from "../components/ToastProvider";
 import AddToPlaylistPopup from "../components/AddToPlaylistPopup";
 import AIPlaylistGenerator from "../components/AIPlaylistGenerator";
 
+// ADDED: Body scroll lock utility
+const useBodyScrollLock = () => {
+  const lockScroll = () => {
+    document.body.style.overflow = 'hidden';
+  };
+
+  const unlockScroll = () => {
+    document.body.style.overflow = 'unset';
+  };
+
+  return { lockScroll, unlockScroll };
+};
+
 export default function Dashboard({ playerReady, isPremium, setAccessToken, setIsPremium, setIsAuthenticated }) {
   const [user, setUser] = useState(null);
   const [playlists, setPlaylists] = useState([]);
@@ -29,6 +42,25 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
   // Toast functionality
   const { showToast } = useToast();
+  
+  // ADDED: Body scroll lock
+  const { lockScroll, unlockScroll } = useBodyScrollLock();
+
+  // ADDED: Effect to manage body scroll when any popup is open
+  useEffect(() => {
+    const isAnyPopupOpen = showLikedSongsPopup || showPlaylistPopup || showAddToPlaylistPopup || showAIPlaylistGenerator || showSearchUI || isMobileMenuOpen;
+    
+    if (isAnyPopupOpen) {
+      lockScroll();
+    } else {
+      unlockScroll();
+    }
+
+    // Cleanup function to ensure scroll is unlocked when component unmounts
+    return () => {
+      unlockScroll();
+    };
+  }, [showLikedSongsPopup, showPlaylistPopup, showAddToPlaylistPopup, showAIPlaylistGenerator, showSearchUI, isMobileMenuOpen, lockScroll, unlockScroll]);
 
   const handleAddToPlaylist = (track) => {
     setSelectedTrackForPlaylist(track);
@@ -674,7 +706,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         </div>
       </main>
 
-      {/* Popups */}
+      {/* UPDATED: Popups */}
       <LikedSongsPopup
         isOpen={showLikedSongsPopup}
         onClose={() => setShowLikedSongsPopup(false)}
@@ -693,7 +725,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         playerReady={playerReady}
         isPremium={isPremium}
         playlists={playlists}
-        setPlaylists={setPlaylists} // ADDED: Pass setPlaylists for management
+        setPlaylists={setPlaylists}
       />
 
       {/* Search Overlay */}
@@ -708,6 +740,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
         }}
         track={selectedTrackForPlaylist}
         playlists={playlists}
+        setPlaylists={setPlaylists}
       />
 
       {/* AI Playlist Generator */}
