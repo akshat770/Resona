@@ -16,6 +16,9 @@
 - **Advanced Search** - Search songs, artists, albums with real-time results
 - **Modern UI/UX** - Clean, responsive design with smooth animations
 
+<img width="1891" height="975" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" />
+
+
 ###  AI-Powered Features
 - **AI Playlist Generator** - Powered by Google Gemini AI
 - **Context-Aware Playlists** - Generate playlists for specific activities or moods
