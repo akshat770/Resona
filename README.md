@@ -16,10 +16,10 @@
 - **Advanced Search** - Search songs, artists, albums with real-time results
 - **Modern UI/UX** - Clean, responsive design with smooth animations
 
-<img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" />
+<img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" /> <br>
+<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" /><br>
+<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
 
-
-<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" />
 
 
 ###  AI-Powered Features
