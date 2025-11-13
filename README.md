@@ -19,7 +19,7 @@
 <img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" />
 
 
-<img width="921" height="760" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" />
+<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" />
 
 
 ###  AI-Powered Features
