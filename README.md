@@ -16,23 +16,22 @@
 - **Advanced Search** - Search songs, artists, albums with real-time results
 - **Modern UI/UX** - Clean, responsive design with smooth animations
 
-<img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" /> <br>
-<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" /><br>
-<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
-
-
+<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" /> <br>
 
 ###  AI-Powered Features
 - **AI Playlist Generator** - Powered by Google Gemini AI
 - **Context-Aware Playlists** - Generate playlists for specific activities or moods
-- **Natural Language Processing** - Describe your perfect playlist in plain English
+- **Natural Language Processing** - Describe your perfect playlist in plain English<br>
+<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" /><br>
 
 ###  Player Features
 - **Advanced Web Player** - Built with Spotify Web Playback SDK
 - **Queue Management** - Add, reorder, and manage your music queue
 - **Shuffle & Repeat** - Full playback control options
 - **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- **Volume Control** - Precise audio level management
+- **Volume Control** - Precise audio level management<br>
+
+<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
 
 ###  User Experience
 - **Dark Theme** - Elegant dark mode interface
