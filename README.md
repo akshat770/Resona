@@ -17,8 +17,9 @@
 - **Modern UI/UX** - Clean, responsive design with smooth animations
 
 <img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" />
-<img width="300" height="275" alt="image" src="https://github.com/user-attachments/assets/600e8e0c-f6b3-425f-b984-face677b5709" />
 
+
+<img width="921" height="760" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" />
 
 
 ###  AI-Powered Features
