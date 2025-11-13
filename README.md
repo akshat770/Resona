@@ -41,6 +41,9 @@
 - **Popup Modals** - Smooth, centered popups with proper scrolling
 - **Smooth Animations** - Polished transitions and micro-interactions
 
+<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32cdfb1f-69b5-410b-82f6-85e0b66c0ebc" />
+
+
 ---
 
 ##  Tech Stack
