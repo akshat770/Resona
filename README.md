@@ -1,7 +1,7 @@
 # Resona - AI-Powered Music Streaming Platform
 
 <div align="center">
-*A modern, AI-enhanced music streaming platform powered by Spotify API and Gemini AI*
+<b>A modern, AI-enhanced music streaming platform powered by Spotify API and Gemini AI</b>
 </div>
 
 ---
