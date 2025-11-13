@@ -21,7 +21,8 @@
 ###  AI-Powered Features
 - **AI Playlist Generator** - Powered by Google Gemini AI
 - **Context-Aware Playlists** - Generate playlists for specific activities or moods
-- **Natural Language Processing** - Describe your perfect playlist in plain English<br>
+- **Natural Language Processing** - Describe your perfect playlist in plain English
+  
 <img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" /><br>
 
 ###  Player Features
@@ -29,8 +30,8 @@
 - **Queue Management** - Add, reorder, and manage your music queue
 - **Shuffle & Repeat** - Full playback control options
 - **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- **Volume Control** - Precise audio level management<br>
-
+- **Volume Control** - Precise audio level management
+  
 <img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
 
 ###  User Experience
