@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+@keyframes cyber-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(34, 211, 238, 0), 0 0 0 rgba(168, 85, 247, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.35), 0 0 22px rgba(168, 85, 247, 0.25);
+  }
+}
+
+@keyframes cyber-scan {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+button {
+  position: relative;
+  isolation: isolate;
+  transition: transform 180ms ease, box-shadow 220ms ease, filter 220ms ease;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, rgba(34, 211, 238, 0.28) 50%, transparent 75%);
+  opacity: 0;
+  transform: translateX(-120%);
+}
+
+button:hover:not(:disabled),
+button:focus-visible:not(:disabled) {
+  animation: cyber-glow 1.6s ease-in-out infinite;
+  filter: saturate(1.08);
+}
+
+button:hover:not(:disabled)::after,
+button:focus-visible:not(:disabled)::after {
+  opacity: 0.85;
+  animation: cyber-scan 950ms linear infinite;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
