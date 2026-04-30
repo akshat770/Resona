@@ -213,6 +213,35 @@ class PlaybackService {
   isPreviewPlaying() {
     return this.audioElement && !this.audioElement.paused && this.currentPreviewUrl;
   }
+
+  async pausePlayback() {
+    // Premium users: pause via Spotify Web Playback API.
+    if (this.isPremium && this.deviceId && this.accessToken) {
+      try {
+        const response = await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${this.deviceId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        });
+
+        if (response.ok || response.status === 204) {
+          return true;
+        }
+      } catch (error) {
+        console.error("Failed to pause premium playback:", error);
+      }
+    }
+
+    // Preview users: pause local preview audio if available.
+    if (this.currentPreviewUrl && this.audioElement && !this.audioElement.paused) {
+      this.audioElement.pause();
+      return true;
+    }
+
+    return false;
+  }
 }
 
 export default new PlaybackService();

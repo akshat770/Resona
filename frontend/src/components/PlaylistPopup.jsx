@@ -61,6 +61,18 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
     }
   };
 
+  const togglePlaylistPlayback = async () => {
+    if (tracks.length === 0) return;
+
+    if (isPlaylistPlaybackActive) {
+      await playbackService.pausePlayback();
+      setIsPlaylistPlaybackActive(false);
+      return;
+    }
+
+    await playPlaylist();
+  };
+
   const updatePlaylist = async () => {
     if (!editingPlaylist) return;
     
@@ -254,7 +266,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
           <div className="bg-gray-700 px-4 py-3 flex items-center justify-between border-b border-gray-600 flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
-                onClick={playPlaylist}
+                onClick={togglePlaylistPlayback}
                 disabled={tracks.length === 0}
                 className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
               >

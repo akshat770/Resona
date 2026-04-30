@@ -72,6 +72,18 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
     }
   };
 
+  const togglePlayAllLikedSongs = async () => {
+    if (songs.length === 0) return;
+
+    if (isPlayAllActive) {
+      await playbackService.pausePlayback();
+      setIsPlayAllActive(false);
+      return;
+    }
+
+    await playAllLikedSongs();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -111,7 +123,7 @@ export default function LikedSongsPopup({ isOpen, onClose, playerReady, isPremiu
 
           <div className="bg-gray-800 px-4 py-3 flex items-center gap-3 border-b border-gray-700 flex-shrink-0">
             <button
-              onClick={playAllLikedSongs}
+              onClick={togglePlayAllLikedSongs}
               disabled={songs.length === 0}
               className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
             >
