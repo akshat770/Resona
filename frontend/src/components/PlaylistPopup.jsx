@@ -8,6 +8,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [isPlaylistPlaybackActive, setIsPlaylistPlaybackActive] = useState(false);
   const [showManager, setShowManager] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState(null);
 
@@ -16,6 +17,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
   useEffect(() => {
     if (isOpen && playlist) {
       fetchPlaylistTracks();
+      setIsPlaylistPlaybackActive(false);
     }
   }, [isOpen, playlist]);
 
@@ -40,6 +42,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
   const playTrack = async (track, trackIndex = null) => {
     if (!track) return;
     setCurrentlyPlaying(track);
+    setIsPlaylistPlaybackActive(true);
     
     if (trackIndex !== null) {
       const trackUris = tracks.map(item => item.track.uri);
@@ -54,6 +57,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
       const trackUris = tracks.map(item => item.track.uri);
       await playbackService.playTrack(tracks[0].track.uri, tracks[0].track.preview_url, trackUris, 0);
       setCurrentlyPlaying(tracks[0].track);
+      setIsPlaylistPlaybackActive(true);
     }
   };
 
@@ -254,9 +258,22 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                 disabled={tracks.length === 0}
                 className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
               >
-                <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+                <span className="relative w-4 h-4 flex items-center justify-center">
+                  <svg
+                    className={`absolute w-4 h-4 transition-all duration-200 ${isPlaylistPlaybackActive ? "opacity-0 scale-75" : "opacity-100 scale-100 ml-0.5"}`}
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                  <svg
+                    className={`absolute w-4 h-4 transition-all duration-200 ${isPlaylistPlaybackActive ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+                  </svg>
+                </span>
               </button>
 
               <button

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import SearchBar from "../SearchBar";
 
 export default function SearchOverlay({
@@ -10,16 +11,38 @@ export default function SearchOverlay({
   handleAddToPlaylist,
   playTrack,
 }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      setShowSearchUI(false);
+      setSearchResults(null);
+      setSearchLikedSongs(new Set());
+    }, 220);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
-      <div className="flex items-center p-4 border-b border-gray-700 bg-gray-800/50">
+    <div
+      className={`fixed inset-0 z-50 flex flex-col transition-all duration-200 ease-out ${
+        isVisible ? "bg-black/90 backdrop-blur-sm opacity-100" : "bg-black/0 opacity-0"
+      }`}
+    >
+      <div
+        className={`flex items-center p-4 border-b border-gray-700 bg-gray-800/50 transition-all duration-300 ease-out ${
+          isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+        }`}
+      >
         <SearchBar autoFocus onResults={(results) => setSearchResults(results)} />
         <button
-          onClick={() => {
-            setShowSearchUI(false);
-            setSearchResults(null);
-            setSearchLikedSongs(new Set());
-          }}
+          onClick={handleClose}
           className="ml-4 p-2 rounded-full text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
           aria-label="Close Search"
         >
@@ -29,7 +52,11 @@ export default function SearchOverlay({
         </button>
       </div>
 
-      <div className="overflow-y-auto flex-1 p-4 text-white">
+      <div
+        className={`overflow-y-auto flex-1 p-4 text-white transition-all duration-300 ease-out ${
+          isVisible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+        }`}
+      >
         {!searchResults && (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="w-16 h-16 border-2 border-gray-600 rounded-full flex items-center justify-center mb-4">

@@ -29,6 +29,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
   const [showSearchUI, setShowSearchUI] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
   const [searchLikedSongs, setSearchLikedSongs] = useState(new Set());
+  const [currentlyPlayingRecentId, setCurrentlyPlayingRecentId] = useState(null);
 
   // Hooks
   const { showToast } = useToast();
@@ -159,6 +160,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
   const playTrack = (track) => {
     if (!track) return;
+    setCurrentlyPlayingRecentId(track.id || null);
     
     const recentIndex = recent.findIndex(r => r.track?.id === track.id);
     if (recentIndex !== -1) {
@@ -375,7 +377,9 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
               {recent.slice(0, 6).map((r, index) => (
                 <div
                   key={r.track?.id || index}
-                  className="bg-gray-800 hover:bg-gray-700 active:bg-gray-750 p-4 lg:p-5 rounded-2xl flex items-center gap-4 lg:gap-5 transition-all duration-200 cursor-pointer group border border-gray-700 hover:border-gray-600 shadow-lg"
+                  className={`bg-gray-800 hover:bg-gray-700 active:bg-gray-750 p-4 lg:p-5 rounded-2xl flex items-center gap-4 lg:gap-5 transition-all duration-200 cursor-pointer group border shadow-lg ${
+                    currentlyPlayingRecentId === r.track?.id ? "border-green-400/70 ring-1 ring-green-400/30" : "border-gray-700 hover:border-gray-600"
+                  }`}
                   onClick={() => playTrack(r.track)}
                 >
                   <div className="relative flex-shrink-0">
@@ -385,11 +389,21 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                       className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl object-cover"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 rounded-xl transition-all duration-200 flex items-center justify-center">
-                      <div className="bg-green-500 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
-                        <svg className="w-4 h-4 lg:w-5 lg:h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </div>
+                      {currentlyPlayingRecentId === r.track?.id ? (
+                        <div className="bg-green-500 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-100 transition-all duration-200 shadow-lg">
+                          <div className="flex gap-0.5">
+                            <div className="w-0.5 h-3 bg-black animate-pulse"></div>
+                            <div className="w-0.5 h-4 bg-black animate-pulse" style={{ animationDelay: "0.1s" }}></div>
+                            <div className="w-0.5 h-2.5 bg-black animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-green-500 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
+                          <svg className="w-4 h-4 lg:w-5 lg:h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      )}
                     </div>
                     {!isPremium && r.track?.preview_url && (
                       <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
@@ -404,6 +418,9 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                     <p className="text-gray-400 text-sm lg:text-base truncate">
                       {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
                     </p>
+                    {currentlyPlayingRecentId === r.track?.id && (
+                      <p className="text-green-400 text-xs mt-1 font-medium">Now Playing</p>
+                    )}
                     {!isPremium && !r.track?.preview_url && (
                       <p className="text-red-400 text-xs mt-1">No preview available</p>
                     )}
