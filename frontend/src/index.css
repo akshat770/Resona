@@ -1,28 +1,15 @@
 @import "tailwindcss";
 
-@keyframes cyber-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 rgba(34, 211, 238, 0), 0 0 0 rgba(168, 85, 247, 0);
-  }
-  50% {
-    box-shadow: 0 0 10px rgba(34, 211, 238, 0.35), 0 0 22px rgba(168, 85, 247, 0.25);
-  }
-}
-
-@keyframes cyber-scan {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-}
-
 button {
   position: relative;
   isolation: isolate;
-  transition: transform 180ms ease, box-shadow 220ms ease, filter 220ms ease;
+  overflow: hidden;
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
 }
 
 button::after {
@@ -31,23 +18,25 @@ button::after {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(110deg, transparent 25%, rgba(34, 211, 238, 0.28) 50%, transparent 75%);
+  background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.2) 50%, transparent 75%);
   opacity: 0;
   transform: translateX(-120%);
+  transition: transform 420ms ease, opacity 300ms ease;
 }
 
 button:hover:not(:disabled),
 button:focus-visible:not(:disabled) {
-  animation: cyber-glow 1.6s ease-in-out infinite;
-  filter: saturate(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
 }
 
 button:hover:not(:disabled)::after,
 button:focus-visible:not(:disabled)::after {
-  opacity: 0.85;
-  animation: cyber-scan 950ms linear infinite;
+  opacity: 1;
+  transform: translateX(120%);
 }
 
 button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.985);
+  transform: translateY(0) scale(0.985);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.24);
 }
