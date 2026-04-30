@@ -35,7 +35,8 @@
 - **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
 - **Volume Control** - Precise audio level management
   
-<img width="1919" height="926" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
+<img width="1919" height="929" alt="image" src="https://github.com/user-attachments/assets/b25e398f-3ac5-4194-87e7-59b4a10d028f" />
+
 
 ###  User Experience
 - **Dark Theme** - Elegant dark mode interface
