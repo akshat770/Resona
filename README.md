@@ -1,6 +1,7 @@
 # Resona - AI-Powered Music Streaming Platform
 
-<img width="1726" height="965" alt="image" src="https://github.com/user-attachments/assets/359c279f-f0f2-400d-8fe8-b4d3ec18164e" />
+<img width="1907" height="929" alt="image" src="https://github.com/user-attachments/assets/930a3b27-1045-4c84-bec1-18a0cab1b863" />
+
 
 <div align="center">
 <b>A modern, AI-enhanced music streaming platform powered by Spotify API and Gemini AI</b>
@@ -18,14 +19,14 @@
 - **Advanced Search** - Search songs, artists, albums with real-time results
 - **Modern UI/UX** - Clean, responsive design with smooth animations
 
-<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/1f713b0f-f23f-45f9-a3eb-d7eba735710f" /> <br>
+<img width="1919" height="926" alt="image" src="https://github.com/user-attachments/assets/38a74273-7f3e-438d-bdde-49bc842a54f2" /> <br>
 
 ###  AI-Powered Features
 - **AI Playlist Generator** - Powered by Google Gemini AI
 - **Context-Aware Playlists** - Generate playlists for specific activities or moods
 - **Natural Language Processing** - Describe your perfect playlist in plain English
   
-<img width="350" height="289" alt="image" src="https://github.com/user-attachments/assets/7264bc4c-f06d-47c4-9d79-327c3b7ff683" /><br>
+<br>
 
 ###  Player Features
 - **Advanced Web Player** - Built with Spotify Web Playback SDK
@@ -34,7 +35,7 @@
 - **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
 - **Volume Control** - Precise audio level management
   
-<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
+<img width="1919" height="926" alt="image" src="https://github.com/user-attachments/assets/32ccf8da-d0f2-4584-96ca-e995d86db93b" />
 
 ###  User Experience
 - **Dark Theme** - Elegant dark mode interface
@@ -43,7 +44,9 @@
 - **Popup Modals** - Smooth, centered popups with proper scrolling
 - **Smooth Animations** - Polished transitions and micro-interactions
 
-<img width="600" height="421" alt="image" src="https://github.com/user-attachments/assets/32cdfb1f-69b5-410b-82f6-85e0b66c0ebc" />
+<img width="1903" height="913" alt="image" src="https://github.com/user-attachments/assets/311ba2fb-b862-46e0-af11-a561e93b90a1" />
+
+
 
 
 ---
