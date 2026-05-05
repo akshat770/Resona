@@ -253,9 +253,13 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
   // FIXED: Volume control functions
   const handleVolumeChange = (newVolume) => {
-    setVolume(newVolume);
-    setIsMuted(newVolume === 0);
-    player?.setVolume(newVolume);
+    const safeVolume = Math.max(0, Math.min(1, newVolume));
+    setVolume(safeVolume);
+    setIsMuted(safeVolume === 0);
+    if (safeVolume > 0) {
+      setPreviousVolume(safeVolume);
+    }
+    player?.setVolume(safeVolume);
   };
 
   const toggleMute = () => {
@@ -365,7 +369,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               <div className="relative" ref={volumeContainerRef}>
                 <button
                   onClick={() => setShowVolumeSlider(!showVolumeSlider)}
-                  className="text-gray-400 hover:text-white p-2 rounded-full relative"
+                  className="text-gray-300 hover:text-white p-2 rounded-full relative border border-slate-500/30 bg-slate-700/40 hover:bg-slate-600/50 transition-all duration-200"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     {getVolumeIcon()}
@@ -382,7 +386,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
 
                 {/* Mobile Volume Slider */}
                 {showVolumeSlider && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50 z-20">
+                  <div className="absolute bottom-full right-0 mb-2 bg-slate-900/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-slate-500/40 z-20">
                     <div className="flex flex-col items-center gap-3">
                       {/* Volume Percentage */}
                       <div className="text-xs text-green-400 font-mono font-semibold">
@@ -390,9 +394,9 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                       </div>
                       
                       {/* Horizontal Slider for Mobile */}
-                      <div className="relative w-24 h-2 bg-gray-700 rounded-full">
+                      <div className="relative w-24 h-2 bg-slate-700 rounded-full">
                         <div 
-                          className="absolute left-0 h-2 bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-200"
+                          className="absolute left-0 h-2 bg-gradient-to-r from-cyan-300 via-slate-200 to-white rounded-full transition-all duration-200"
                           style={{ width: `${volume * 100}%` }}
                         >
                           <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
@@ -621,7 +625,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               >
                 <button
                   onClick={toggleMute}
-                  className="text-gray-400 hover:text-white transition-all duration-200 p-2 rounded-full hover:bg-gray-700 hover:shadow-lg group relative"
+                  className="text-gray-300 hover:text-white transition-all duration-200 p-2 rounded-full hover:bg-slate-700/70 hover:shadow-lg group relative border border-slate-500/30 bg-slate-700/30"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     {getVolumeIcon()}
@@ -629,7 +633,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   
                   {/* Volume Level Indicator */}
                   <div className="absolute -top-1 -right-1">
-                    <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    <div className={`w-2 h-2 rounded-full transition-all duration-200 shadow-sm ${
                       volume > 0.7 ? 'bg-green-400' : 
                       volume > 0.3 ? 'bg-yellow-400' : 
                       volume > 0 ? 'bg-orange-400' : 'bg-red-400'
@@ -643,7 +647,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                     showVolumeSlider ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
                   }`}>
                     <div 
-                      className="bg-gray-800/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-gray-600/50"
+                      className="bg-slate-900/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-slate-500/40"
                       onMouseEnter={() => setIsVolumeSliderActive(true)}
                       onMouseLeave={() => setIsVolumeSliderActive(false)}
                     >
@@ -654,23 +658,23 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                         </div>
                         
                         {/* Vertical Slider */}
-                        <div className="relative h-24 w-2 bg-gray-700 rounded-full">
+                        <div className="relative h-24 w-2 bg-slate-700 rounded-full">
                           <div 
-                            className="absolute bottom-0 w-2 bg-gradient-to-t from-green-400 to-green-500 rounded-full transition-all duration-200"
+                            className="absolute bottom-0 w-2 bg-gradient-to-t from-cyan-300 via-slate-200 to-white rounded-full transition-all duration-200"
                             style={{ height: `${volume * 100}%` }}
                           >
-                            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
+                            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-cyan-300"></div>
                           </div>
                           <input
                             type="range"
                             min="0"
                             max="1"
                             step="0.01"
-                            value={1 - volume}
-                            onChange={(e) => handleVolumeChange(1 - parseFloat(e.target.value))}
+                            value={volume}
+                            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             style={{ 
-                              writingMode: 'bt-lr',
+                              writingMode: 'vertical-lr',
                               WebkitAppearance: 'slider-vertical'
                             }}
                           />
