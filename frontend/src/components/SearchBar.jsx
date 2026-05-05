@@ -48,10 +48,10 @@ export default function SearchBar({ onResults, autoFocus }) {
         autoComplete="off"
         autoFocus={autoFocus}
         placeholder="Search for songs, artists, albums..."
-        className="bg-gray-800 border border-gray-700 rounded-full px-4 py-2 text-white focus:outline-none w-full"
+        className="bg-slate-900 border border-slate-600 rounded-full px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-slate-300 w-full"
       />
       {loading && (
-        <span className="absolute right-3 top-2.5 animate-spin w-4 h-4 border-b-2 border-green-400 rounded-full"></span>
+        <span className="absolute right-3 top-2.5 animate-spin w-4 h-4 border-b-2 border-slate-300 rounded-full"></span>
       )}
     </div>
   );

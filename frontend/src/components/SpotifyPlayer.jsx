@@ -323,7 +323,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700 z-50">
         <div className="flex items-center justify-center gap-3">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-slate-300 rounded-full animate-pulse"></div>
           <span className="text-sm">Connecting to Spotify...</span>
         </div>
       </div>
@@ -334,7 +334,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
     return (
       <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 text-center text-gray-400 border-t border-gray-700 z-50">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          <div className="w-2 h-2 bg-slate-300 rounded-full"></div>
           <span className="text-sm">Premium Player Ready - Click on a song in the dashboard to start</span>
         </div>
       </div>
@@ -377,7 +377,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   {/* Volume Level Indicator */}
                   <div className="absolute -top-1 -right-1">
                     <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                      volume > 0.7 ? 'bg-green-400' : 
+                      volume > 0.7 ? 'bg-slate-300' : 
                       volume > 0.3 ? 'bg-yellow-400' : 
                       volume > 0 ? 'bg-orange-400' : 'bg-red-400'
                     }`}></div>
@@ -389,7 +389,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   <div className="absolute bottom-full right-0 mb-2 bg-slate-900/95 backdrop-blur-sm rounded-xl p-4 shadow-2xl border border-slate-500/40 z-20">
                     <div className="flex flex-col items-center gap-3">
                       {/* Volume Percentage */}
-                      <div className="text-xs text-green-400 font-mono font-semibold">
+                      <div className="text-xs text-slate-300 font-mono font-semibold">
                         {Math.round(volume * 100)}%
                       </div>
                       
@@ -399,7 +399,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                           className="absolute left-0 h-2 bg-gradient-to-r from-cyan-300 via-slate-200 to-white rounded-full transition-all duration-200"
                           style={{ width: `${volume * 100}%` }}
                         >
-                          <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-green-400"></div>
+                          <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg border-2 border-cyan-300"></div>
                         </div>
                         <input
                           type="range"
@@ -420,7 +420,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                             onClick={() => handleVolumeChange(level)}
                             className={`w-6 h-6 rounded text-xs font-mono transition-all duration-200 ${
                               Math.abs(volume - level) < 0.1 
-                                ? 'bg-green-500 text-black shadow-lg' 
+                                ? 'bg-slate-300 text-black shadow-lg' 
                                 : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                             }`}
                           >
@@ -436,7 +436,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               <button
                 onClick={toggleLiked}
                 className={`p-2 rounded-full transition-colors ${
-                  isLiked ? 'text-green-400' : 'text-gray-400'
+                  isLiked ? 'text-slate-300' : 'text-gray-400'
                 }`}
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -466,7 +466,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
             
             <button 
               onClick={togglePlay}
-              className="bg-gradient-to-r from-green-400 to-green-500 text-black rounded-full w-12 h-12 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+              className="bg-gradient-to-r from-slate-200 to-slate-400 text-black rounded-full w-12 h-12 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
             >
               {isPlaying ? (
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -494,7 +494,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
               onClick={handleProgressClick}
             >
               <div 
-                className="bg-gradient-to-r from-green-400 to-green-500 h-1 rounded-full transition-all duration-150"
+                className="bg-gradient-to-r from-slate-200 to-slate-400 h-1 rounded-full transition-all duration-150"
                 style={{ width: `${duration > 0 ? (position / duration) * 100 : 0}%` }}
               />
             </div>
@@ -514,7 +514,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   className="w-14 h-14 rounded-lg shadow-lg"
                 />
                 {isPlaying && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-slate-300 rounded-full flex items-center justify-center">
                     <div className="w-2 h-2 bg-green-800 rounded-full animate-pulse"></div>
                   </div>
                 )}
@@ -531,7 +531,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                 <button
                   onClick={toggleLiked}
                   className={`p-2 rounded-full transition-all duration-200 ${
-                    isLiked ? 'text-green-400' : 'text-gray-400'
+                    isLiked ? 'text-slate-300' : 'text-gray-400'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -565,7 +565,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                 
                 <button 
                   onClick={togglePlay}
-                  className="bg-gradient-to-r from-green-400 to-green-500 text-black rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all duration-200 shadow-xl hover:shadow-green-500/30"
+                  className="bg-gradient-to-r from-slate-200 to-slate-400 text-black rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all duration-200 shadow-xl hover:shadow-slate-400/30"
                 >
                   {isPlaying ? (
                     <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -598,12 +598,12 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   onClick={handleProgressClick}
                 >
                   <div 
-                    className="bg-gradient-to-r from-green-400 to-green-500 h-2 rounded-full transition-all duration-150 relative"
+                    className="bg-gradient-to-r from-slate-200 to-slate-400 h-2 rounded-full transition-all duration-150 relative"
                     style={{ width: `${duration > 0 ? (position / duration) * 100 : 0}%` }}
                   >
                     <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
-                  <div className="absolute inset-0 bg-green-400/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="absolute inset-0 bg-slate-300/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 <span className="text-xs text-gray-400 min-w-[2.5rem] font-mono">
                   {formatTime(duration)}
@@ -634,7 +634,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   {/* Volume Level Indicator */}
                   <div className="absolute -top-1 -right-1">
                     <div className={`w-2 h-2 rounded-full transition-all duration-200 shadow-sm ${
-                      volume > 0.7 ? 'bg-green-400' : 
+                      volume > 0.7 ? 'bg-slate-300' : 
                       volume > 0.3 ? 'bg-yellow-400' : 
                       volume > 0 ? 'bg-orange-400' : 'bg-red-400'
                     }`}></div>
@@ -653,7 +653,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                     >
                       <div className="flex flex-col items-center gap-3">
                         {/* Volume Percentage */}
-                        <div className="text-xs text-green-400 font-mono font-semibold">
+                        <div className="text-xs text-slate-300 font-mono font-semibold">
                           {Math.round(volume * 100)}%
                         </div>
                         
@@ -686,7 +686,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                             <div
                               key={level}
                               className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                                volume >= level ? 'bg-green-400 shadow-green-400/50' : 'bg-gray-600'
+                                volume >= level ? 'bg-slate-300 shadow-slate-300/50' : 'bg-gray-600'
                               }`}
                               style={{ 
                                 boxShadow: volume >= level ? '0 0 4px currentColor' : 'none'
@@ -703,7 +703,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                               onClick={() => handleVolumeChange(level)}
                               className={`w-6 h-6 rounded text-xs font-mono transition-all duration-200 ${
                                 Math.abs(volume - level) < 0.1 
-                                  ? 'bg-green-500 text-black shadow-lg' 
+                                  ? 'bg-slate-300 text-black shadow-lg' 
                                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                               }`}
                             >
@@ -723,7 +723,7 @@ export default function SpotifyPlayer({ accessToken, onPlayerReady }) {
                   {[...Array(4)].map((_, i) => (
                     <div
                       key={i}
-                      className="w-0.5 bg-green-400 rounded-full animate-pulse"
+                      className="w-0.5 bg-slate-300 rounded-full animate-pulse"
                       style={{
                         height: `${8 + Math.random() * 8}px`,
                         animationDelay: `${i * 0.1}s`,
