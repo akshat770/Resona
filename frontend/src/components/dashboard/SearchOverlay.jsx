@@ -73,7 +73,7 @@ export default function SearchOverlay({
           <div className="max-w-6xl mx-auto space-y-8">
             {searchResults.tracks?.items?.length > 0 && (
               <section>
-                <h3 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-green-500 mb-6 flex items-center gap-2">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
                   </svg>
@@ -94,7 +94,7 @@ export default function SearchOverlay({
                           <button
                             title={isLiked ? "Remove from Liked Songs" : "Add to Liked Songs"}
                             className={`p-2 rounded-full transition-colors ${
-                              isLiked ? "text-slate-200 hover:text-white" : "text-gray-400 hover:text-slate-200"
+                              isLiked ? "text-green-400 hover:text-white" : "text-gray-400 hover:text-green-400"
                             }`}
                             onClick={() => addToLikedSongs(track.id, track.name)}
                           >
@@ -107,7 +107,7 @@ export default function SearchOverlay({
                               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                             </svg>
                           </button>
-                          <button title="Play" className="p-2 rounded-full hover:bg-slate-300/30 text-slate-300 hover:text-white transition-colors" onClick={() => playTrack({ ...track, preview_url: track.preview_url })}>
+                          <button title="Play" className="p-2 rounded-full hover:bg-green-500/30 text-green-500 hover:text-white transition-colors" onClick={() => playTrack({ ...track, preview_url: track.preview_url })}>
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
                             </svg>
@@ -122,7 +122,7 @@ export default function SearchOverlay({
 
             {searchResults.artists?.items?.length > 0 && (
               <section>
-                <h3 className="text-2xl font-bold text-slate-300 mb-6 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-green-500 mb-6 flex items-center gap-2">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 13.5C14.8 13.8 14.4 14 14 14H10C9.6 14 9.2 13.8 9 13.5L3 7V9L9 15.5C9.2 15.8 9.6 16 10 16H14C14.4 16 14.8 15.8 15 15.5L21 9Z" />
                   </svg>
@@ -142,7 +142,7 @@ export default function SearchOverlay({
 
             {searchResults.albums?.items?.length > 0 && (
               <section>
-                <h3 className="text-2xl font-bold text-slate-300 mb-6">Albums</h3>
+                <h3 className="text-2xl font-bold text-green-500 mb-6">Albums</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {searchResults.albums.items.filter((album) => album && album.id).map((album) => (
                     <div key={album.id} className="flex flex-col p-4 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
@@ -157,7 +157,7 @@ export default function SearchOverlay({
 
             {searchResults.playlists?.items?.length > 0 && (
               <section>
-                <h3 className="text-2xl font-bold text-slate-300 mb-6">Playlists</h3>
+                <h3 className="text-2xl font-bold text-green-500 mb-6">Playlists</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {searchResults.playlists.items.filter((playlist) => playlist && playlist.id).map((playlist) => (
                     <div key={playlist.id} className="flex flex-col p-4 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">

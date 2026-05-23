@@ -194,20 +194,12 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
     return 'evening';
   };
 
-  const renderSilverSurferBadge = () => (
-    <span className="inline-flex items-center justify-center rounded-full bg-slate-300/20 border border-slate-300/40 p-1 ml-2 align-middle">
-      <svg className="w-3 h-3 text-slate-200" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M20 14c-1.82.18-3.52-.09-5.09-.82-1.35 2.2-3.57 3.85-6.66 4.95 2.85.58 5.53.31 8.03-.83 1.35-.61 2.59-1.38 3.72-2.3zm-9.2-3.61c1.8-1.17 3.75-1.53 5.86-1.08l-.84-2.31-2.53.9-.95-2.61-5.21 1.9.95 2.61 2.72-.99zM5 17l1.74-.63c2.57-.93 4.49-2.4 5.76-4.41l-5.58 2.03L5 17z" />
-      </svg>
-    </span>
-  );
-
   // ==================== LOADING STATE ====================
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen text-white bg-slate-950">
+      <div className="flex items-center justify-center h-screen text-white bg-black">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <div className="w-12 h-12 border-3 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <h2 className="text-xl font-semibold mb-2">Loading your music...</h2>
           <p className="text-gray-400">Setting up your personalized experience</p>
         </div>
@@ -217,13 +209,13 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
   // ==================== MAIN RENDER ====================
   return (
-    <div className="flex min-h-screen bg-slate-950 text-white pb-24 relative">
+    <div className="flex min-h-screen bg-black text-white pb-24 relative">
       {/* SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transform transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-300 ease-in-out ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:inset-0 border-r border-gray-700`}>
         <div className="flex items-center justify-between p-6 lg:justify-start">
-          <h1 className="text-2xl font-bold text-slate-200">Resona</h1>
+          <h1 className="text-2xl font-bold text-green-500">Resona</h1>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="lg:hidden text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
@@ -270,9 +262,8 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
               />
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate flex items-center">
-                <span>{user?.display_name || user?.id || "User"}</span>
-                {renderSilverSurferBadge()}
+              <p className="text-sm font-medium text-white truncate">
+                {user?.display_name || user?.id || "User"}
               </p>
               <p className="text-xs text-gray-400">
                 {isPremium ? 'Premium User' : 'Free User (Preview Mode)'}
@@ -293,7 +284,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
       {/* MAIN CONTENT */}
       <main className="flex-1 lg:ml-0">
         {/* MOBILE HEADER */}
-        <div className="lg:hidden bg-slate-900 p-4 flex items-center justify-between border-b border-gray-700 sticky top-0 z-30">
+        <div className="lg:hidden bg-black p-4 flex items-center justify-between border-b border-gray-800 sticky top-0 z-30">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="relative w-10 h-10 text-white focus:outline-none"
@@ -309,7 +300,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           <div className="flex items-center gap-3 flex-1 justify-end">
             <button
               onClick={() => setShowSearchUI(true)}
-              className="bg-slate-800 border border-slate-600 rounded-full px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-transparent w-32 text-sm cursor-pointer"
+              className="bg-[#282828] border border-gray-600 rounded-full px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-32 text-sm cursor-pointer"
             >
               Search...
             </button>
@@ -323,7 +314,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 lg:mb-12 gap-6">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold mb-3">
-                Good {getGreeting()}, {user?.display_name || user?.id || "User"}! {renderSilverSurferBadge()}
+                Good {getGreeting()}, {user?.display_name || user?.id || "User"}!
               </h2>
               <p className="text-gray-400 text-lg">
                 {isPremium ? "Let's play some music" : "Enjoy 30-second previews or upgrade to Premium"}
@@ -340,7 +331,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
               
               <button
                 onClick={() => setShowSearchUI(true)}
-                className="bg-slate-800 border border-slate-600 rounded-full px-4 lg:px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-transparent w-32 lg:w-80 text-sm cursor-pointer text-left transition-colors"
+                className="bg-[#282828] border border-gray-600 rounded-full px-4 lg:px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-32 lg:w-80 text-sm cursor-pointer text-left transition-colors"
               >
                 Search...
               </button>
@@ -349,14 +340,14 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
 
           {/* PREMIUM BANNER */}
           {!isPremium && (
-            <div className="bg-gradient-to-r from-slate-500 to-slate-700 p-6 rounded-2xl mb-8 lg:mb-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-green-600 to-green-800 p-6 rounded-2xl mb-8 lg:mb-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
               <div>
                 <h3 className="font-bold text-white text-xl mb-2">Upgrade to Spotify Premium</h3>
-                <p className="text-slate-200">Get unlimited skips, no ads, and full track playback</p>
+                <p className="text-green-100">Get unlimited skips, no ads, and full track playback</p>
               </div>
               <button 
                 onClick={() => window.open('https://www.spotify.com/premium/', '_blank')}
-                className="bg-white text-slate-700 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors self-start lg:self-auto shadow-lg"
+                className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors self-start lg:self-auto shadow-lg"
               >
                 Upgrade Now
               </button>
@@ -387,7 +378,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                 <div
                   key={r.track?.id || index}
                   className={`bg-gray-800 hover:bg-gray-700 active:bg-gray-750 p-4 lg:p-5 rounded-2xl flex items-center gap-4 lg:gap-5 transition-all duration-200 cursor-pointer group border shadow-lg ${
-                    currentlyPlayingRecentId === r.track?.id ? "border-slate-300/70 ring-1 ring-slate-300/40" : "border-gray-700 hover:border-gray-600"
+                    currentlyPlayingRecentId === r.track?.id ? "border-green-500/70 ring-1 ring-green-500/40" : "border-gray-700 hover:border-gray-600"
                   }`}
                   onClick={() => playTrack(r.track)}
                 >
@@ -399,7 +390,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 rounded-xl transition-all duration-200 flex items-center justify-center">
                       {currentlyPlayingRecentId === r.track?.id ? (
-                        <div className="bg-slate-300 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-100 transition-all duration-200 shadow-lg">
+                        <div className="bg-green-500 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-100 transition-all duration-200 shadow-lg">
                           <div className="flex gap-0.5">
                             <div className="w-0.5 h-3 bg-black animate-pulse"></div>
                             <div className="w-0.5 h-4 bg-black animate-pulse" style={{ animationDelay: "0.1s" }}></div>
@@ -407,7 +398,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-slate-300 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
+                        <div className="bg-green-500 text-black rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg">
                           <svg className="w-4 h-4 lg:w-5 lg:h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
@@ -428,7 +419,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                       {r.track?.artists?.map(a => a.name).join(", ") || "Unknown Artist"}
                     </p>
                     {currentlyPlayingRecentId === r.track?.id && (
-                      <p className="text-slate-200 text-xs mt-1 font-medium">Now Playing</p>
+                      <p className="text-green-400 text-xs mt-1 font-medium">Now Playing</p>
                     )}
                     {!isPremium && !r.track?.preview_url && (
                       <p className="text-red-400 text-xs mt-1">No preview available</p>
@@ -462,7 +453,7 @@ export default function Dashboard({ playerReady, isPremium, setAccessToken, setI
                         e.stopPropagation();
                         playPlaylist(pl);
                       }}
-                      className="absolute bottom-2 right-2 lg:bottom-3 lg:right-3 bg-slate-300 hover:bg-slate-200 text-black rounded-full w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg transform translate-y-2 group-hover:translate-y-0"
+                      className="absolute bottom-2 right-2 lg:bottom-3 lg:right-3 bg-green-500 hover:bg-green-400 text-black rounded-full w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg transform translate-y-2 group-hover:translate-y-0"
                     >
                       <svg className="w-5 h-5 lg:w-6 lg:h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>

@@ -156,7 +156,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
       {/* FIXED: Added bottom padding to avoid web player overlap */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pb-32">
         <div className="bg-gray-800 rounded-2xl w-full max-w-3xl h-[70vh] flex flex-col shadow-2xl border border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-600 to-slate-800 p-4 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
+          <div className="bg-gradient-to-r from-green-700 to-green-900 p-4 flex items-center justify-between flex-shrink-0 rounded-t-2xl">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <img
                 src={playlist.images?.[0]?.url || "/placeholder.png"}
@@ -183,18 +183,18 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                         ...editingPlaylist,
                         description: e.target.value
                       })}
-                      className="w-full bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-slate-200 text-sm placeholder-slate-300/70 focus:outline-none focus:ring-1 focus:ring-white/50"
+                      className="w-full bg-white/20 border border-white/30 rounded-lg px-2 py-1 text-green-400 text-sm placeholder-green-300/70 focus:outline-none focus:ring-1 focus:ring-white/50"
                       placeholder="Description (optional)"
                     />
                   </div>
                 ) : (
                   <>
                     <h1 className="text-lg font-bold text-white truncate">{playlist.name}</h1>
-                    <p className="text-slate-200 text-sm">
+                    <p className="text-green-400 text-sm">
                       {tracks.length} songs • {playlist.owner?.display_name || 'Unknown'}
                     </p>
                     {playlist.description && (
-                      <p className="text-slate-300 text-xs mt-1 line-clamp-1">{playlist.description}</p>
+                      <p className="text-green-500 text-xs mt-1 line-clamp-1">{playlist.description}</p>
                     )}
                   </>
                 )}
@@ -207,7 +207,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                   <button
                     onClick={updatePlaylist}
                     disabled={loading || !editingPlaylist.name.trim()}
-                    className="text-slate-200 hover:text-white p-1 rounded-full hover:bg-white/10 disabled:opacity-50 transition-colors"
+                    className="text-green-400 hover:text-white p-1 rounded-full hover:bg-white/10 disabled:opacity-50 transition-colors"
                     title="Save changes"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -268,7 +268,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
               <button
                 onClick={togglePlaylistPlayback}
                 disabled={tracks.length === 0}
-                className="bg-slate-300 hover:bg-slate-200 disabled:bg-gray-600 text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
+                className="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-black rounded-full w-10 h-10 flex items-center justify-center hover:scale-105 transition-all shadow-lg disabled:cursor-not-allowed"
               >
                 <span className="relative w-4 h-4 flex items-center justify-center">
                   <svg
@@ -297,7 +297,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
 
               {currentlyPlaying && (
                 <div className="hidden lg:flex items-center gap-2 ml-4 px-2 py-1 bg-gray-600 rounded-lg border border-gray-500">
-                  <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-pulse"></div>
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                   <div>
                     <p className="text-white font-medium text-xs">Playing</p>
                     <p className="text-gray-300 truncate max-w-32 text-xs">{currentlyPlaying.name}</p>
@@ -309,7 +309,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
                 isPremium 
-                  ? (playerReady ? 'bg-slate-300' : 'bg-yellow-400')
+                  ? (playerReady ? 'bg-green-500' : 'bg-yellow-400')
                   : 'bg-blue-400'
               }`}></div>
               <span className="text-xs text-gray-300 hidden sm:block">
@@ -325,7 +325,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="w-6 h-6 border-2 border-slate-300 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                   <p className="text-gray-300">Loading playlist...</p>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                       />
                       <div className="flex-1 min-w-0">
                         <p className={`font-medium truncate text-sm ${
-                          currentlyPlaying?.id === item.track.id ? 'text-slate-300' : 'text-white'
+                          currentlyPlaying?.id === item.track.id ? 'text-green-500' : 'text-white'
                         }`}>
                           {item.track.name}
                         </p>
@@ -424,7 +424,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                       <div
                         key={`${item.track.id}-${index}`}
                         className={`grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-700 rounded-xl group transition-colors cursor-pointer border border-transparent hover:border-gray-600 ${
-                          currentlyPlaying?.id === item.track.id ? 'bg-gray-700 border-slate-300' : ''
+                          currentlyPlaying?.id === item.track.id ? 'bg-gray-700 border-green-500' : ''
                         }`}
                         onClick={() => playTrack(item.track, index)}
                       >
@@ -432,9 +432,9 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                           {currentlyPlaying?.id === item.track.id ? (
                             <div className="w-5 h-5 flex items-center justify-center">
                               <div className="flex gap-0.5">
-                                <div className="w-0.5 h-4 bg-slate-300 animate-pulse"></div>
-                                <div className="w-0.5 h-3 bg-slate-300 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                                <div className="w-0.5 h-3.5 bg-slate-300 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                <div className="w-0.5 h-4 bg-green-500 animate-pulse"></div>
+                                <div className="w-0.5 h-3 bg-green-500 animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                                <div className="w-0.5 h-3.5 bg-green-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                               </div>
                             </div>
                           ) : (
@@ -442,7 +442,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                               <span className="text-gray-400 group-hover:hidden text-sm">
                                 {index + 1}
                               </span>
-                              <div className="hidden group-hover:block text-white hover:text-slate-300 transition-colors">
+                              <div className="hidden group-hover:block text-white hover:text-green-500 transition-colors">
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M8 5v14l11-7z"/>
                                 </svg>
@@ -459,7 +459,7 @@ export default function PlaylistPopup({ isOpen, onClose, playlist, playerReady, 
                           />
                           <div className="min-w-0 flex-1">
                             <p className={`font-semibold truncate ${
-                              currentlyPlaying?.id === item.track.id ? 'text-slate-300' : 'text-white'
+                              currentlyPlaying?.id === item.track.id ? 'text-green-500' : 'text-white'
                             }`}>
                               {item.track.name}
                             </p>
